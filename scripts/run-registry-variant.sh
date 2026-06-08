@@ -62,7 +62,7 @@ echo "  make ${VARIANT//-/_}-init"
 echo
 
 run_service "${VARIANT}-staff-api" "$API_DIR" "${GENERATED_DIR}/staff-portal-api.env" \
-  python3 main.py run
+  python -m openg2p_registry_staff_portal_api.main run
 
 run_service "${VARIANT}-celery-worker" "$CELERY_DIR" "${GENERATED_DIR}/celery-workers.env" \
   celery -A main worker -l info

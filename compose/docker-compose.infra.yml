@@ -43,7 +43,7 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-secret}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-adminsecret}
     ports:
       - "9000:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
@@ -65,7 +65,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD:-secret} &&
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD:-adminsecret} &&
       mc mb --ignore-existing local/default_bucket &&
       mc mb --ignore-existing local/templates &&
       exit 0

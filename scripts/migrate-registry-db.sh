@@ -43,7 +43,7 @@ echo "Migrating ${LABEL} schema into ${REGISTRY_DB_NAME} ..."
   set +a
   # shellcheck disable=SC1091
   source venv/bin/activate
-  python main.py migrate
+  python -m openg2p_registry_staff_portal_api.main migrate
 )
 
 echo "Migration complete for ${LABEL}."

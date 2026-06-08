@@ -62,3 +62,10 @@ $$;
 
 SELECT 'CREATE DATABASE spardb OWNER sparuser'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'spardb')\gexec
+
+-- Required for registry search indexes during Alembic migration
+\c nsr_registry_db
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+\c farmer_registry_db
+CREATE EXTENSION IF NOT EXISTS pg_trgm;

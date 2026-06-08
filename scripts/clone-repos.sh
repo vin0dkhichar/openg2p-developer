@@ -62,6 +62,7 @@ clone_repo "OpenG2P Registry Odoo" "https://github.com/OpenG2P/openg2p-registry.
 clone_repo "OpenG2P Odoo Commons" "https://github.com/OpenG2P/openg2p-odoo-commons.git" "$PBMS_REF" "openg2p-odoo-commons"
 clone_repo "Registry Platform" "https://github.com/OpenG2P/registry-platform.git" "$REGISTRY_REF" "registry-platform"
 clone_repo "Registry Gen2 Staff Portal UI" "https://github.com/OpenG2P/openg2p-registry-gen2-staff-portal-ui.git" "$REGISTRY_REF" "openg2p-registry-gen2-staff-portal-ui"
+clone_repo "OpenG2P IAM Service" "https://github.com/OpenG2P/openg2p-iam-service.git" "$REGISTRY_REF" "openg2p-iam-service"
 clone_repo "OpenG2P Sample Data" "https://github.com/OpenG2P/openg2p-data.git" "develop" "openg2p-data"
 clone_repo "Farmer Registry" "https://github.com/OpenG2P/farmer-registry.git" "$FARMER_REGISTRY_REF" "farmer-registry"
 clone_repo "National Social Registry" "https://github.com/OpenG2P/national-social-registry.git" "$NSR_REF" "national-social-registry"
