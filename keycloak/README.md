@@ -10,19 +10,20 @@ Keycloak runs via Docker in dev mode:
 
 OpenG2P production deployments create OIDC clients through Helm `keycloak-init` subcharts. For local development, create a `staff` realm (or use `master` for quick tests) and add clients used by generated env files:
 
-| Client ID              | Used by                          |
-|------------------------|----------------------------------|
-| `registry-staff-portal`| Registry Gen2 staff portal       |
-| `g2p-bridge`           | G2P Bridge APIs                  |
-| `spar-mapper`          | SPAR mapper partner API          |
-| `spar-bene-portal`     | SPAR beneficiary portal API      |
-| `openg2p-pbms-local`   | PBMS Odoo OIDC (if enabled)      |
+| Client ID                      | Used by                          |
+|--------------------------------|----------------------------------|
+| `farmer-registry-staff-portal` | Farmer Registry Gen2 staff portal|
+| `nsr-registry-staff-portal`    | National Social Registry portal  |
+| `g2p-bridge`                   | G2P Bridge APIs                  |
+| `spar-mapper`                  | SPAR mapper partner API          |
+| `spar-bene-portal`             | SPAR beneficiary portal API      |
+| `openg2p-pbms-local`           | PBMS Odoo OIDC (if enabled)      |
 
 Suggested redirect URIs for local dev:
 
 - `http://localhost:3000/*`
+- `http://localhost:3010/*`
 - `http://localhost:8069/*`
-- `http://localhost:8070/*`
 
 ## Optional realm import
 

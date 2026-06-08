@@ -11,11 +11,17 @@ make infra-up
 
 ## Includes
 
-- Postgres (all OpenG2P databases pre-created)
+- Postgres (PBMS, Farmer Registry, NSR, Bridge, SPAR databases pre-created)
 - Redis
 - MinIO (+ default buckets)
 - Keycloak (dev mode)
 
 ## Next step
 
-Pick a subsystem profile and run the corresponding native command.
+Pick a subsystem profile:
+
+- `profiles/pbms-dev.md`
+- `profiles/farmer-registry-dev.md`
+- `profiles/national-social-registry-dev.md`
+- `profiles/pbms-bridge-dev.md`
+- `profiles/spar-dev.md`

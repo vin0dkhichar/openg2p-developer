@@ -1,12 +1,14 @@
 name: openg2p-developer
 
-# Registry Gen2 container profile. Requires generated env files under generated/registry/.
-# For active development, prefer: make registry-run
+# Registry Gen2 domain variants. Native dev is recommended:
+#   make farmer-registry-run
+#   make nsr-registry-run
+
 services:
-  registry-staff-api:
-    profiles: [registry, full]
-    image: ${REGISTRY_STAFF_API_IMAGE:-openg2p/openg2p-registry-staff-portal-api:develop}
-    container_name: openg2p-registry-staff-api
+  farmer-registry-staff-api:
+    profiles: [farmer-registry, full]
+    image: ${FARMER_REGISTRY_STAFF_API_IMAGE:-openg2p/openg2p-farmer-registry-staff-portal-api:develop}
+    container_name: openg2p-farmer-registry-staff-api
     depends_on:
       postgres:
         condition: service_healthy
@@ -15,15 +17,15 @@ services:
       minio:
         condition: service_healthy
     env_file:
-      - ../generated/registry/staff-portal-api.env
+      - ../generated/farmer-registry/staff-portal-api.env
     ports:
-      - "${REGISTRY_STAFF_API_PORT:-8001}:8000"
+      - "${FARMER_REGISTRY_STAFF_API_PORT:-8001}:8000"
     restart: unless-stopped
 
-  registry-celery-worker:
-    profiles: [registry, full]
-    image: ${REGISTRY_CELERY_IMAGE:-openg2p/openg2p-registry-celery-workers:develop}
-    container_name: openg2p-registry-celery-worker
+  farmer-registry-celery-worker:
+    profiles: [farmer-registry, full]
+    image: ${FARMER_REGISTRY_CELERY_IMAGE:-openg2p/openg2p-farmer-registry-celery:develop}
+    container_name: openg2p-farmer-registry-celery-worker
     depends_on:
       postgres:
         condition: service_healthy
@@ -32,17 +34,61 @@ services:
       minio:
         condition: service_healthy
     env_file:
-      - ../generated/registry/celery-workers.env
+      - ../generated/farmer-registry/celery-workers.env
     restart: unless-stopped
 
-  registry-staff-ui:
-    profiles: [registry, full]
-    image: ${REGISTRY_UI_IMAGE:-openg2p/openg2p-registry-staff-portal-ui:develop}
-    container_name: openg2p-registry-staff-ui
+  farmer-registry-staff-ui:
+    profiles: [farmer-registry, full]
+    image: ${FARMER_REGISTRY_UI_IMAGE:-openg2p/openg2p-farmer-registry-staff-portal-ui:develop}
+    container_name: openg2p-farmer-registry-staff-ui
     depends_on:
-      - registry-staff-api
+      - farmer-registry-staff-api
     env_file:
-      - ../generated/registry/staff-portal-ui.env
+      - ../generated/farmer-registry/staff-portal-ui.env
     ports:
-      - "${REGISTRY_UI_PORT:-3000}:3000"
+      - "${FARMER_REGISTRY_UI_PORT:-3000}:3000"
+    restart: unless-stopped
+
+  nsr-registry-staff-api:
+    profiles: [nsr-registry, full]
+    image: ${NSR_REGISTRY_STAFF_API_IMAGE:-openg2p/openg2p-nsr-registry-staff-portal-api:develop}
+    container_name: openg2p-nsr-registry-staff-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file:
+      - ../generated/national-social-registry/staff-portal-api.env
+    ports:
+      - "${NSR_REGISTRY_STAFF_API_PORT:-8011}:8000"
+    restart: unless-stopped
+
+  nsr-registry-celery-worker:
+    profiles: [nsr-registry, full]
+    image: ${NSR_REGISTRY_CELERY_IMAGE:-openg2p/openg2p-nsr-registry-celery:develop}
+    container_name: openg2p-nsr-registry-celery-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file:
+      - ../generated/national-social-registry/celery-workers.env
+    restart: unless-stopped
+
+  nsr-registry-staff-ui:
+    profiles: [nsr-registry, full]
+    image: ${NSR_REGISTRY_UI_IMAGE:-openg2p/openg2p-nsr-registry-staff-portal-ui:develop}
+    container_name: openg2p-nsr-registry-staff-ui
+    depends_on:
+      - nsr-registry-staff-api
+    env_file:
+      - ../generated/national-social-registry/staff-portal-ui.env
+    ports:
+      - "${NSR_REGISTRY_UI_PORT:-3010}:3000"
     restart: unless-stopped

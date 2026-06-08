@@ -1,7 +1,7 @@
 -- Shared roles and databases for OpenG2P local development.
 -- Runs once on first Postgres container start.
 
--- Odoo shared role (PBMS + Social Registry native dev)
+-- Odoo shared role (PBMS native dev)
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'odoo') THEN
@@ -22,27 +22,19 @@ $$;
 SELECT 'CREATE DATABASE pbmsdb OWNER pbmsuser'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'pbmsdb')\gexec
 
--- Social Registry
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'sruser') THEN
-    CREATE ROLE sruser WITH LOGIN PASSWORD 'srpass' CREATEDB;
-  END IF;
-END
-$$;
+-- Registry Gen2: Farmer Registry
+SELECT 'CREATE DATABASE farmer_registry_db OWNER postgres'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'farmer_registry_db')\gexec
 
-SELECT 'CREATE DATABASE socialregistrydb OWNER sruser'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'socialregistrydb')\gexec
+SELECT 'CREATE DATABASE farmer_master_data_db OWNER postgres'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'farmer_master_data_db')\gexec
 
--- Registry Gen2
-SELECT 'CREATE DATABASE registry_db OWNER postgres'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'registry_db')\gexec
+-- Registry Gen2: National Social Registry
+SELECT 'CREATE DATABASE nsr_registry_db OWNER postgres'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'nsr_registry_db')\gexec
 
-SELECT 'CREATE DATABASE openg2p_gen2_master_data_db OWNER postgres'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'openg2p_gen2_master_data_db')\gexec
-
-SELECT 'CREATE DATABASE masterdatadb OWNER postgres'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'masterdatadb')\gexec
+SELECT 'CREATE DATABASE nsr_master_data_db OWNER postgres'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'nsr_master_data_db')\gexec
 
 -- G2P Bridge
 DO $$

@@ -9,14 +9,18 @@ if [[ -f .env ]]; then
   source .env
 fi
 
-OPENG2P_WORKSPACE="${OPENG2P_WORKSPACE:-../openg2p-workspace}"
-if [[ -d "$ROOT_DIR/$OPENG2P_WORKSPACE" ]]; then
-  OPENG2P_WORKSPACE="$(cd "$ROOT_DIR/$OPENG2P_WORKSPACE" && pwd)"
-elif [[ -d "$OPENG2P_WORKSPACE" ]]; then
-  OPENG2P_WORKSPACE="$(cd "$OPENG2P_WORKSPACE" && pwd)"
-else
-  OPENG2P_WORKSPACE="$(cd "$ROOT_DIR" && cd "$OPENG2P_WORKSPACE" 2>/dev/null && pwd || echo "${ROOT_DIR}/${OPENG2P_WORKSPACE}")"
-fi
+resolve_path() {
+  local path="$1"
+  if [[ "$path" != /* ]]; then
+    path="${ROOT_DIR}/${path}"
+  fi
+  local dir part
+  dir="$(dirname "$path")"
+  part="$(basename "$path")"
+  echo "$(cd "$dir" && pwd)/${part}"
+}
+
+OPENG2P_WORKSPACE="$(resolve_path "${OPENG2P_WORKSPACE:-../openg2p-workspace}")"
 
 clone_repo() {
   local name="$1"
@@ -44,8 +48,9 @@ mkdir -p "$OPENG2P_WORKSPACE"
 
 ODOO_REF="${ODOO_REF:-17.0}"
 PBMS_REF="${PBMS_REF:-develop}"
-SR_REF="${SR_REF:-develop}"
 REGISTRY_REF="${REGISTRY_REF:-develop}"
+FARMER_REGISTRY_REF="${FARMER_REGISTRY_REF:-develop}"
+NSR_REF="${NSR_REF:-develop}"
 G2P_BRIDGE_REF="${G2P_BRIDGE_REF:-develop}"
 SPAR_REF="${SPAR_REF:-develop}"
 
@@ -54,10 +59,10 @@ clone_repo "OpenG2P PBMS Odoo" "https://github.com/OpenG2P/openg2p-pbms-odoo.git
 clone_repo "OpenG2P PBMS Community Addons" "https://github.com/OpenG2P/openg2p-pbms-community-addons.git" "17.0-develop" "openg2p-pbms-community-addons"
 clone_repo "OpenG2P PBMS Extensions" "https://github.com/OpenG2P/openg2p-pbms-odoo-extensions.git" "$PBMS_REF" "openg2p-pbms-odoo-extensions"
 clone_repo "OpenG2P Registry Odoo" "https://github.com/OpenG2P/openg2p-registry.git" "17.0-develop" "openg2p-registry"
-clone_repo "OpenG2P Social Registry" "https://github.com/OpenG2P/openg2p-social-registry.git" "$SR_REF" "openg2p-social-registry"
-clone_repo "OpenG2P Social Registry Community Addons" "https://github.com/OpenG2P/openg2p-social-registry-community-addons.git" "$SR_REF" "openg2p-social-registry-community-addons"
-clone_repo "OpenG2P Odoo Commons" "https://github.com/OpenG2P/openg2p-odoo-commons.git" "$SR_REF" "openg2p-odoo-commons"
+clone_repo "OpenG2P Odoo Commons" "https://github.com/OpenG2P/openg2p-odoo-commons.git" "$PBMS_REF" "openg2p-odoo-commons"
 clone_repo "Registry Platform" "https://github.com/OpenG2P/registry-platform.git" "$REGISTRY_REF" "registry-platform"
+clone_repo "Farmer Registry" "https://github.com/OpenG2P/farmer-registry.git" "$FARMER_REGISTRY_REF" "farmer-registry"
+clone_repo "National Social Registry" "https://github.com/OpenG2P/national-social-registry.git" "$NSR_REF" "national-social-registry"
 clone_repo "G2P Bridge" "https://github.com/OpenG2P/g2p-bridge.git" "$G2P_BRIDGE_REF" "g2p-bridge"
 clone_repo "SPAR" "https://github.com/OpenG2P/openg2p-spar.git" "$SPAR_REF" "openg2p-spar"
 

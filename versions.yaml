@@ -30,16 +30,6 @@ repos:
     ref: 17.0-develop
     path: openg2p-registry
 
-  social_registry:
-    url: https://github.com/OpenG2P/openg2p-social-registry.git
-    ref: develop
-    path: openg2p-social-registry
-
-  social_registry_community_addons:
-    url: https://github.com/OpenG2P/openg2p-social-registry-community-addons.git
-    ref: develop
-    path: openg2p-social-registry-community-addons
-
   odoo_commons:
     url: https://github.com/OpenG2P/openg2p-odoo-commons.git
     ref: develop
@@ -49,6 +39,18 @@ repos:
     url: https://github.com/OpenG2P/registry-platform.git
     ref: develop
     path: registry-platform
+
+  farmer_registry:
+    url: https://github.com/OpenG2P/farmer-registry.git
+    ref: develop
+    path: farmer-registry
+    extension_path: farmer-extension
+
+  national_social_registry:
+    url: https://github.com/OpenG2P/national-social-registry.git
+    ref: develop
+    path: national-social-registry
+    extension_path: nsr-extension
 
   g2p_bridge:
     url: https://github.com/OpenG2P/g2p-bridge.git
@@ -62,7 +64,11 @@ repos:
 
 images:
   pbms: openg2p/openg2p-pbms-core:1.2.6
-  social_registry: openg2p/openg2p-social-registry-core:1.4.5
+  farmer_registry_staff_api: openg2p/openg2p-farmer-registry-staff-portal-api:develop
+  farmer_registry_celery: openg2p/openg2p-farmer-registry-celery:develop
+  farmer_registry_ui: openg2p/openg2p-farmer-registry-staff-portal-ui:develop
+  nsr_registry_staff_api: openg2p/openg2p-nsr-registry-staff-portal-api:develop
+  nsr_registry_celery: openg2p/openg2p-nsr-registry-celery:develop
   g2p_bridge_partner_api: openg2p/g2p-bridge-partner-api:develop
   g2p_bridge_bene_api: openg2p/g2p-bridge-bene-portal-api:develop
   g2p_bridge_celery: openg2p/g2p-bridge-celery:develop
@@ -82,15 +88,15 @@ profiles:
     requires: [infra]
     compose_profiles: [infra, pbms]
 
-  social_registry:
-    description: Social Registry Odoo (native or container)
-    requires: [infra]
-    compose_profiles: [infra, social-registry]
+  farmer_registry:
+    description: Farmer Registry Gen2 (platform + farmer-extension)
+    requires: [infra, registry_platform, farmer_registry]
+    compose_profiles: [infra, farmer-registry]
 
-  registry:
-    description: Registry Gen2 APIs, Celery, Staff Portal UI
-    requires: [infra]
-    compose_profiles: [infra, registry]
+  national_social_registry:
+    description: National Social Registry Gen2 (platform + nsr-extension)
+    requires: [infra, registry_platform, national_social_registry]
+    compose_profiles: [infra, nsr-registry]
 
   bridge:
     description: G2P Bridge APIs, Celery, example bank
@@ -104,5 +110,5 @@ profiles:
 
   full:
     description: All infrastructure and containerized apps
-    requires: [infra, pbms, social_registry, registry, bridge, spar]
-    compose_profiles: [infra, pbms, social-registry, registry, bridge, spar]
+    requires: [infra, pbms, farmer_registry, national_social_registry, bridge, spar]
+    compose_profiles: [infra, pbms, farmer-registry, nsr-registry, bridge, spar]
