@@ -60,13 +60,8 @@ case "$VARIANT" in
       echo "[seed] Loading NSR sample data via ${LOAD_SCRIPT} ..."
       (
         cd "$DB_SEED_DIR"
-        if [[ ! -d venv ]]; then
-          python3 -m venv venv
-        fi
         # shellcheck disable=SC1091
-        source venv/bin/activate
-        pip install --upgrade pip wheel >/dev/null
-        pip install -r requirements.txt >/dev/null
+        source "${API_DIR}/venv/bin/activate"
         export OPENG2P_DATA_DIR NSR_SEED_DATA_DIR
         registry_variant_export_psql
         python3 load_sample_data.py

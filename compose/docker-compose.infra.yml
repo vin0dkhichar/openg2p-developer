@@ -75,6 +75,7 @@ services:
   keycloak:
     profiles: [infra, pbms, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
     image: quay.io/keycloak/keycloak:26.0
+    platform: linux/amd64
     container_name: openg2p-keycloak
     command: start-dev
     environment:
