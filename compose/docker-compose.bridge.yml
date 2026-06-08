@@ -1,0 +1,63 @@
+name: openg2p-developer
+
+# G2P Bridge container profile. For active development, prefer: make bridge-run
+services:
+  g2p-bridge-partner-api:
+    profiles: [bridge, full]
+    image: ${G2P_BRIDGE_PARTNER_IMAGE:-openg2p/g2p-bridge-partner-api:develop}
+    container_name: openg2p-g2p-bridge-partner-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    env_file:
+      - ../generated/bridge/partner-api.env
+    ports:
+      - "${G2P_BRIDGE_API_PORT:-8002}:8000"
+    restart: unless-stopped
+
+  g2p-bridge-celery-worker:
+    profiles: [bridge, full]
+    image: ${G2P_BRIDGE_CELERY_IMAGE:-openg2p/g2p-bridge-celery:develop}
+    container_name: openg2p-g2p-bridge-celery-worker
+    command: ["worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../generated/bridge/celery-worker.env
+    restart: unless-stopped
+
+  g2p-bridge-celery-beat:
+    profiles: [bridge, full]
+    image: ${G2P_BRIDGE_CELERY_IMAGE:-openg2p/g2p-bridge-celery:develop}
+    container_name: openg2p-g2p-bridge-celery-beat
+    command: ["beat"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../generated/bridge/celery-beat.env
+    restart: unless-stopped
+
+  g2p-bridge-example-bank:
+    profiles: [bridge, full]
+    image: ${G2P_BRIDGE_EXAMPLE_BANK_IMAGE:-openg2p/openg2p-g2p-bridge-example-bank-api:develop}
+    container_name: openg2p-g2p-bridge-example-bank
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../generated/bridge/example-bank.env
+    ports:
+      - "${G2P_BRIDGE_EXAMPLE_BANK_PORT:-8003}:8000"
+    restart: unless-stopped

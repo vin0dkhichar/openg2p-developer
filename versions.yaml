@@ -1,0 +1,108 @@
+# Pinned versions for the OpenG2P local developer stack.
+# Override individual refs in .env if needed.
+
+workspace:
+  default_path: ../openg2p-workspace
+
+repos:
+  odoo:
+    url: https://github.com/odoo/odoo.git
+    ref: "17.0"
+    path: odoo17
+
+  pbms:
+    url: https://github.com/OpenG2P/openg2p-pbms-odoo.git
+    ref: develop
+    path: openg2p-pbms-odoo
+
+  pbms_community_addons:
+    url: https://github.com/OpenG2P/openg2p-pbms-community-addons.git
+    ref: 17.0-develop
+    path: openg2p-pbms-community-addons
+
+  pbms_extensions:
+    url: https://github.com/OpenG2P/openg2p-pbms-odoo-extensions.git
+    ref: develop
+    path: openg2p-pbms-odoo-extensions
+
+  openg2p_registry:
+    url: https://github.com/OpenG2P/openg2p-registry.git
+    ref: 17.0-develop
+    path: openg2p-registry
+
+  social_registry:
+    url: https://github.com/OpenG2P/openg2p-social-registry.git
+    ref: develop
+    path: openg2p-social-registry
+
+  social_registry_community_addons:
+    url: https://github.com/OpenG2P/openg2p-social-registry-community-addons.git
+    ref: develop
+    path: openg2p-social-registry-community-addons
+
+  odoo_commons:
+    url: https://github.com/OpenG2P/openg2p-odoo-commons.git
+    ref: develop
+    path: openg2p-odoo-commons
+
+  registry_platform:
+    url: https://github.com/OpenG2P/registry-platform.git
+    ref: develop
+    path: registry-platform
+
+  g2p_bridge:
+    url: https://github.com/OpenG2P/g2p-bridge.git
+    ref: develop
+    path: g2p-bridge
+
+  spar:
+    url: https://github.com/OpenG2P/openg2p-spar.git
+    ref: develop
+    path: openg2p-spar
+
+images:
+  pbms: openg2p/openg2p-pbms-core:1.2.6
+  social_registry: openg2p/openg2p-social-registry-core:1.4.5
+  g2p_bridge_partner_api: openg2p/g2p-bridge-partner-api:develop
+  g2p_bridge_bene_api: openg2p/g2p-bridge-bene-portal-api:develop
+  g2p_bridge_celery: openg2p/g2p-bridge-celery:develop
+  g2p_bridge_example_bank: openg2p/openg2p-g2p-bridge-example-bank-api:develop
+  postgres: postgres:16
+  redis: redis:7-alpine
+  minio: minio/minio:latest
+  keycloak: quay.io/keycloak/keycloak:26.0
+
+profiles:
+  infra:
+    description: Shared Postgres, Redis, MinIO, Keycloak
+    compose_profiles: [infra]
+
+  pbms:
+    description: PBMS Odoo (native or container)
+    requires: [infra]
+    compose_profiles: [infra, pbms]
+
+  social_registry:
+    description: Social Registry Odoo (native or container)
+    requires: [infra]
+    compose_profiles: [infra, social-registry]
+
+  registry:
+    description: Registry Gen2 APIs, Celery, Staff Portal UI
+    requires: [infra]
+    compose_profiles: [infra, registry]
+
+  bridge:
+    description: G2P Bridge APIs, Celery, example bank
+    requires: [infra]
+    compose_profiles: [infra, bridge]
+
+  spar:
+    description: SPAR mapper and beneficiary portal APIs
+    requires: [infra]
+    compose_profiles: [infra, spar]
+
+  full:
+    description: All infrastructure and containerized apps
+    requires: [infra, pbms, social_registry, registry, bridge, spar]
+    compose_profiles: [infra, pbms, social-registry, registry, bridge, spar]

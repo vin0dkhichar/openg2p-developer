@@ -1,0 +1,26 @@
+# Local workspace and generated configs
+generated/
+.openg2p-workspace/
+repos/
+
+# Environment
+.env
+*.local.env
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+.next/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Docker volumes (if bind-mounted locally)
+data/

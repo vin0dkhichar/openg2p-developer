@@ -1,0 +1,48 @@
+name: openg2p-developer
+
+# Registry Gen2 container profile. Requires generated env files under generated/registry/.
+# For active development, prefer: make registry-run
+services:
+  registry-staff-api:
+    profiles: [registry, full]
+    image: ${REGISTRY_STAFF_API_IMAGE:-openg2p/openg2p-registry-staff-portal-api:develop}
+    container_name: openg2p-registry-staff-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file:
+      - ../generated/registry/staff-portal-api.env
+    ports:
+      - "${REGISTRY_STAFF_API_PORT:-8001}:8000"
+    restart: unless-stopped
+
+  registry-celery-worker:
+    profiles: [registry, full]
+    image: ${REGISTRY_CELERY_IMAGE:-openg2p/openg2p-registry-celery-workers:develop}
+    container_name: openg2p-registry-celery-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file:
+      - ../generated/registry/celery-workers.env
+    restart: unless-stopped
+
+  registry-staff-ui:
+    profiles: [registry, full]
+    image: ${REGISTRY_UI_IMAGE:-openg2p/openg2p-registry-staff-portal-ui:develop}
+    container_name: openg2p-registry-staff-ui
+    depends_on:
+      - registry-staff-api
+    env_file:
+      - ../generated/registry/staff-portal-ui.env
+    ports:
+      - "${REGISTRY_UI_PORT:-3000}:3000"
+    restart: unless-stopped

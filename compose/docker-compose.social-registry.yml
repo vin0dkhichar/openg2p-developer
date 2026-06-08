@@ -1,0 +1,21 @@
+name: openg2p-developer
+
+# Optional containerized Social Registry (Odoo). For active development, prefer: make sr-run
+services:
+  social-registry:
+    profiles: [social-registry, full]
+    image: ${SR_IMAGE:-openg2p/openg2p-social-registry-core:1.4.5}
+    container_name: openg2p-social-registry
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    environment:
+      HOST: postgres
+      USER: sruser
+      PASSWORD: srpass
+      DATABASE: socialregistrydb
+    ports:
+      - "${SR_HTTP_PORT:-8070}:8069"
+    restart: unless-stopped
