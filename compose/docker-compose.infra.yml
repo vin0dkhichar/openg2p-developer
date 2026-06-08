@@ -5,7 +5,7 @@ name: openg2p-developer
 
 services:
   postgres:
-    profiles: [infra, pbms, farmer-registry, nsr-registry, bridge, spar, full]
+    profiles: [infra, pbms, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
     image: postgres:16
     container_name: openg2p-postgres
     environment:
@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
 
   minio:
-    profiles: [infra, farmer-registry, nsr-registry, full]
+    profiles: [infra, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, full]
     image: minio/minio:latest
     container_name: openg2p-minio
     command: server /data --console-address ":9001"
@@ -57,7 +57,7 @@ services:
     restart: unless-stopped
 
   minio-init:
-    profiles: [infra, farmer-registry, nsr-registry, full]
+    profiles: [infra, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, full]
     image: minio/mc:latest
     container_name: openg2p-minio-init
     depends_on:
@@ -73,7 +73,7 @@ services:
     restart: "no"
 
   keycloak:
-    profiles: [infra, pbms, farmer-registry, nsr-registry, bridge, spar, full]
+    profiles: [infra, pbms, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
     image: quay.io/keycloak/keycloak:26.0
     container_name: openg2p-keycloak
     command: start-dev

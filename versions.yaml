@@ -40,6 +40,16 @@ repos:
     ref: develop
     path: registry-platform
 
+  registry_gen2_staff_portal_ui:
+    url: https://github.com/OpenG2P/openg2p-registry-gen2-staff-portal-ui.git
+    ref: develop
+    path: openg2p-registry-gen2-staff-portal-ui
+
+  openg2p_data:
+    url: https://github.com/OpenG2P/openg2p-data.git
+    ref: develop
+    path: openg2p-data
+
   farmer_registry:
     url: https://github.com/OpenG2P/farmer-registry.git
     ref: develop
@@ -67,8 +77,11 @@ images:
   farmer_registry_staff_api: openg2p/openg2p-farmer-registry-staff-portal-api:develop
   farmer_registry_celery: openg2p/openg2p-farmer-registry-celery:develop
   farmer_registry_ui: openg2p/openg2p-farmer-registry-staff-portal-ui:develop
+  farmer_registry_db_seed: openg2p/openg2p-farmer-registry-db-seed:develop
   nsr_registry_staff_api: openg2p/openg2p-nsr-registry-staff-portal-api:develop
   nsr_registry_celery: openg2p/openg2p-nsr-registry-celery:develop
+  nsr_registry_ui: openg2p/openg2p-nsr-registry-staff-portal-ui:develop
+  nsr_registry_db_seed: openg2p/openg2p-nsr-registry-db-seed:develop
   g2p_bridge_partner_api: openg2p/g2p-bridge-partner-api:develop
   g2p_bridge_bene_api: openg2p/g2p-bridge-bene-portal-api:develop
   g2p_bridge_celery: openg2p/g2p-bridge-celery:develop

@@ -4,7 +4,7 @@ Farmer Registry is a Registry Gen2 domain implementation for farmers, households
 
 ## Goal
 
-Run the shared Registry Gen2 platform with the `farmer-extension` Python package installed.
+Run the shared Registry Gen2 platform with the `farmer-extension` Python package installed, seeded configuration, and the Gen2 staff portal UI.
 
 ## Steps
 
@@ -14,17 +14,12 @@ make setup
 make infra-up
 
 make install-registry-extension VARIANT=farmer-registry
+make install-registry-ui
+make farmer-registry-init
 
-# Migrate DB (once)
-cd ../openg2p-workspace/registry-platform/apis/openg2p-registry-staff-portal-api
-source venv/bin/activate
-set -a && source ../../../openg2p-developer/generated/farmer-registry/staff-portal-api.env && set +a
-python main.py migrate
+# Optional demo registrants and supporting rows
+LOAD_SAMPLE_DATA=true make farmer-registry-seed
 
-# UI deps (once)
-cd ../../ui/staff-portal-ui && npm install
-
-cd ../../../openg2p-developer
 make farmer-registry-run
 ```
 
@@ -35,15 +30,42 @@ make farmer-registry-run
 
 ## Databases
 
-- `farmer_registry_db`
-- `farmer_master_data_db`
+- `farmer_registry_db` — registry data (schema + configuration seed)
+- `farmer_master_data_db` — master data
+
+## What `farmer-registry-init` does
+
+1. `python main.py migrate` — creates/updates schema in `farmer_registry_db`
+2. Applies extension `meta_data/*.sql` — register definitions, schemas, tabs, themes, registry name/logo
+
+## Sample data
+
+Farmer demo rows ship as SQL under `farmer-extension/.../sample_data/`:
+
+```bash
+LOAD_SAMPLE_DATA=true make farmer-registry-seed
+```
+
+Or use the published db-seed container after migrate:
+
+```bash
+make farmer-registry-migrate
+LOAD_SAMPLE_DATA=true make up-farmer-registry-seed
+```
+
+## UI repo
+
+Default UI path: `openg2p-registry-gen2-staff-portal-ui` (override with `FARMER_REGISTRY_UI_PATH` in `.env`).
+
+Each variant uses its own generated UI env file and port, even when the UI repo is shared.
 
 ## Repos involved
 
 | Repo | Purpose |
 |------|---------|
-| `registry-platform` | Shared Gen2 APIs, Celery, UI |
-| `farmer-registry` | Domain extension (`farmer-extension/`) |
+| `registry-platform` | Shared Gen2 APIs and Celery |
+| `farmer-registry` | Domain extension + db-seed Docker spec |
+| `openg2p-registry-gen2-staff-portal-ui` | Staff portal frontend |
 
 ## Optional container mode
 

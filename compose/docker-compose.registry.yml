@@ -92,3 +92,45 @@ services:
     ports:
       - "${NSR_REGISTRY_UI_PORT:-3010}:3000"
     restart: unless-stopped
+
+  farmer-registry-db-seed:
+    profiles: [farmer-registry-seed]
+    image: ${FARMER_REGISTRY_DB_SEED_IMAGE:-openg2p/openg2p-farmer-registry-db-seed:develop}
+    container_name: openg2p-farmer-registry-db-seed
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: farmer_registry_db
+      PGUSER: ${POSTGRES_SUPERUSER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      LOAD_SAMPLE_DATA: ${LOAD_SAMPLE_DATA:-false}
+    restart: "no"
+
+  nsr-registry-db-seed:
+    profiles: [nsr-registry-seed]
+    image: ${NSR_REGISTRY_DB_SEED_IMAGE:-openg2p/openg2p-nsr-registry-db-seed:develop}
+    container_name: openg2p-nsr-registry-db-seed
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: nsr_registry_db
+      PGUSER: ${POSTGRES_SUPERUSER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      LOAD_SAMPLE_DATA: ${LOAD_SAMPLE_DATA:-false}
+      LOAD_IMAGES: ${LOAD_IMAGES:-false}
+      LOAD_TEMPLATES: ${LOAD_TEMPLATES:-false}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-secret}
+      MINIO_SECURE: "false"
+      TEMPLATE_BUCKET_NAME: templates
+      IMAGE_BUCKET_NAME: registrant-photos
+    restart: "no"

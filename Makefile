@@ -9,13 +9,16 @@ COMPOSE_FILES := \
 	-f compose/docker-compose.bridge.yml \
 	-f compose/docker-compose.spar.yml
 
-COMPOSE_PROFILES := --profile infra --profile pbms --profile farmer-registry --profile nsr-registry --profile bridge --profile spar --profile full
+COMPOSE_PROFILES := --profile infra --profile pbms --profile farmer-registry --profile nsr-registry --profile farmer-registry-seed --profile nsr-registry-seed --profile bridge --profile spar --profile full
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup clone generate install-odoo install-registry-extension infra-up infra-down up down status logs clean \
+.PHONY: help setup clone generate install-odoo install-registry-extension install-registry-ui \
+	infra-up infra-down up down status logs clean \
 	pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run \
-	up-infra up-pbms up-farmer-registry up-nsr-registry up-bridge up-spar up-full
+	farmer-registry-init farmer-registry-migrate farmer-registry-seed \
+	nsr-registry-init nsr-registry-migrate nsr-registry-seed seed-registry \
+	up-infra up-pbms up-farmer-registry up-nsr-registry up-farmer-registry-seed up-nsr-registry-seed up-bridge up-spar up-full
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2}'
@@ -34,6 +37,31 @@ install-odoo: ## Install Odoo 17 Python dependencies into a venv
 
 install-registry-extension: ## Install domain extension (VARIANT=farmer-registry|national-social-registry)
 	@bash scripts/install-registry-extension.sh $(VARIANT)
+
+install-registry-ui: ## Install npm deps for Gen2 staff portal UI repo(s)
+	@bash scripts/install-registry-ui.sh
+
+farmer-registry-init: generate ## Migrate schema and seed Farmer Registry configuration
+	@VARIANT=farmer-registry bash scripts/init-registry-variant.sh farmer-registry
+
+farmer-registry-migrate: generate ## Migrate Farmer Registry schema only
+	@VARIANT=farmer-registry bash scripts/migrate-registry-db.sh farmer-registry
+
+farmer-registry-seed: generate ## Seed Farmer Registry configuration and optional sample data
+	@VARIANT=farmer-registry bash scripts/seed-registry-db.sh farmer-registry
+
+nsr-registry-init: generate ## Migrate schema and seed NSR configuration
+	@VARIANT=national-social-registry bash scripts/init-registry-variant.sh national-social-registry
+
+nsr-registry-migrate: generate ## Migrate NSR schema only
+	@VARIANT=national-social-registry bash scripts/migrate-registry-db.sh national-social-registry
+
+nsr-registry-seed: generate ## Seed NSR configuration and optional sample data
+	@VARIANT=national-social-registry bash scripts/seed-registry-db.sh national-social-registry
+
+seed-registry: generate ## Seed a registry variant (VARIANT=farmer-registry|national-social-registry)
+	@test -n "$(VARIANT)" || (echo "Set VARIANT=farmer-registry or VARIANT=national-social-registry" >&2; exit 1)
+	@VARIANT=$(VARIANT) bash scripts/seed-registry-db.sh $(VARIANT)
 
 infra-up: ## Start shared infrastructure (Postgres, Redis, MinIO, Keycloak)
 	@test -f .env || cp .env.example .env
@@ -71,6 +99,12 @@ up-farmer-registry: generate infra-up ## Start infra + containerized Farmer Regi
 
 up-nsr-registry: generate infra-up ## Start infra + containerized National Social Registry
 	@$(COMPOSE) $(COMPOSE_FILES) --profile nsr-registry up -d
+
+up-farmer-registry-seed: generate infra-up ## Run Farmer Registry db-seed container (after migrate)
+	@$(COMPOSE) $(COMPOSE_FILES) --profile farmer-registry-seed up --abort-on-container-exit
+
+up-nsr-registry-seed: generate infra-up ## Run NSR db-seed container (after migrate)
+	@$(COMPOSE) $(COMPOSE_FILES) --profile nsr-registry-seed up --abort-on-container-exit
 
 up-bridge: generate infra-up ## Start infra + containerized G2P Bridge (if images exist)
 	@$(COMPOSE) $(COMPOSE_FILES) --profile bridge up -d

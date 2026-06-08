@@ -109,6 +109,9 @@ make generate
 make install-odoo
 make install-registry-extension VARIANT=farmer-registry
 make install-registry-extension VARIANT=national-social-registry
+make install-registry-ui
+make farmer-registry-init
+make nsr-registry-init
 
 # Infrastructure
 make infra-up
@@ -119,10 +122,20 @@ make clean          # removes docker volumes
 
 # Native development (recommended)
 make pbms-run
+make farmer-registry-init
 make farmer-registry-run
+make nsr-registry-init
 make nsr-registry-run
 make bridge-run
 make spar-run
+
+# Registry seed helpers
+make farmer-registry-migrate
+make farmer-registry-seed
+LOAD_SAMPLE_DATA=true make farmer-registry-seed
+make nsr-registry-migrate
+make nsr-registry-seed
+LOAD_SAMPLE_DATA=true LOAD_TEMPLATES=true make nsr-registry-seed
 
 # Container profiles (optional)
 make up-pbms
@@ -163,20 +176,34 @@ Default Odoo master password: `admin`
 ```bash
 make clone
 make install-registry-extension VARIANT=farmer-registry
-# or VARIANT=national-social-registry
+make install-registry-ui
+make farmer-registry-init
 
-# Migrate once
-cd ../openg2p-workspace/registry-platform/apis/openg2p-registry-staff-portal-api
-source venv/bin/activate
-set -a && source ../../../openg2p-developer/generated/farmer-registry/staff-portal-api.env && set +a
-python main.py migrate
+# Optional demo data
+LOAD_SAMPLE_DATA=true make farmer-registry-seed
 
-cd ../../ui/staff-portal-ui && npm install
-cd ../../../openg2p-developer
 make farmer-registry-run
 ```
 
-Use `generated/national-social-registry/` and `make nsr-registry-run` for NSR.
+For NSR, swap the variant name:
+
+```bash
+make install-registry-extension VARIANT=national-social-registry
+make nsr-registry-init
+LOAD_SAMPLE_DATA=true make nsr-registry-seed   # needs openg2p-data clone
+make nsr-registry-run
+```
+
+Each variant uses its own database, generated env files, API/UI ports, and extension seed SQL. The staff portal UI repo is shared by default (`openg2p-registry-gen2-staff-portal-ui`), but each variant gets a separate `.env` and port so Farmer Registry and NSR can run together.
+
+Seed steps:
+
+| Step | Farmer Registry | National Social Registry |
+|------|-----------------|--------------------------|
+| Schema | `make farmer-registry-migrate` | `make nsr-registry-migrate` |
+| Configuration SQL | `make farmer-registry-seed` | `make nsr-registry-seed` |
+| Sample data | `LOAD_SAMPLE_DATA=true make farmer-registry-seed` | `LOAD_SAMPLE_DATA=true make nsr-registry-seed` |
+| All-in-one | `make farmer-registry-init` | `make nsr-registry-init` |
 
 ### G2P Bridge
 

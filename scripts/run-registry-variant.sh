@@ -2,50 +2,13 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT_DIR"
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/scripts/lib/registry-variant.sh"
 
 VARIANT="${1:-}"
-if [[ -z "$VARIANT" || ( "$VARIANT" != "farmer-registry" && "$VARIANT" != "national-social-registry" ) ]]; then
-  echo "Usage: $0 {farmer-registry|national-social-registry}" >&2
-  exit 1
-fi
+registry_variant_validate "$VARIANT"
 
-if [[ -f .env ]]; then
-  # shellcheck disable=SC1091
-  source .env
-fi
-
-resolve_path() {
-  local path="$1"
-  if [[ "$path" != /* ]]; then
-    path="${ROOT_DIR}/${path}"
-  fi
-  local dir part
-  dir="$(dirname "$path")"
-  part="$(basename "$path")"
-  echo "$(cd "$dir" && pwd)/${part}"
-}
-
-OPENG2P_WORKSPACE="$(resolve_path "${OPENG2P_WORKSPACE:-../openg2p-workspace}")"
-REGISTRY_ROOT="${OPENG2P_WORKSPACE}/registry-platform"
-GENERATED_DIR="${ROOT_DIR}/generated/${VARIANT}"
-
-API_DIR="${REGISTRY_ROOT}/apis/openg2p-registry-staff-portal-api"
-CELERY_DIR="${REGISTRY_ROOT}/celery/openg2p-registry-celery-workers"
-UI_DIR="${REGISTRY_ROOT}/ui/staff-portal-ui"
-
-case "$VARIANT" in
-  farmer-registry)
-    PRODUCT_REPO="${OPENG2P_WORKSPACE}/farmer-registry"
-    EXTENSION_DIR="${PRODUCT_REPO}/farmer-extension"
-    LABEL="Farmer Registry"
-    ;;
-  national-social-registry)
-    PRODUCT_REPO="${OPENG2P_WORKSPACE}/national-social-registry"
-    EXTENSION_DIR="${PRODUCT_REPO}/nsr-extension"
-    LABEL="National Social Registry"
-    ;;
-esac
+registry_variant_paths "$VARIANT"
 
 "${ROOT_DIR}/scripts/infra-wait.sh"
 "${ROOT_DIR}/scripts/generate-config.sh" >/dev/null
@@ -76,21 +39,26 @@ run_service() {
     return 0
   fi
 
-  echo "Starting ${name}..."
+  echo "Starting ${name} from ${dir} ..."
   (
     cd "$dir"
     set -a
     # shellcheck disable=SC1090
     source "$env_file"
     set +a
+    if [[ -d venv ]]; then
+      # shellcheck disable=SC1091
+      source venv/bin/activate
+    fi
     exec "$@"
   ) &
   echo "${name} pid=$!"
 }
 
 echo "${LABEL} native stack"
-echo "Install deps once with:"
+echo "One-time setup:"
 echo "  make install-registry-extension VARIANT=${VARIANT}"
+echo "  make ${VARIANT//-/_}-init"
 echo
 
 run_service "${VARIANT}-staff-api" "$API_DIR" "${GENERATED_DIR}/staff-portal-api.env" \
@@ -102,6 +70,9 @@ run_service "${VARIANT}-celery-worker" "$CELERY_DIR" "${GENERATED_DIR}/celery-wo
 if [[ -d "$UI_DIR" ]]; then
   run_service "${VARIANT}-staff-ui" "$UI_DIR" "${GENERATED_DIR}/staff-portal-ui.env" \
     npm run dev
+else
+  echo "Staff portal UI not found at ${UI_DIR}." >&2
+  echo "Clone openg2p-registry-gen2-staff-portal-ui or set the variant UI path in .env." >&2
 fi
 
 wait
