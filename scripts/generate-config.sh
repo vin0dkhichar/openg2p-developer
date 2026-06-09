@@ -159,6 +159,25 @@ render_registry_variant \
   "nsr-registry-staff-portal" \
   "${REGISTRY_AUTH_ENABLED}"
 
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/scripts/lib/extension-manifest.sh"
+
+while IFS= read -r custom_variant; do
+  [[ -n "$custom_variant" ]] || continue
+  extension_manifest_load "$custom_variant"
+  mkdir -p "${GENERATED_DIR}/${custom_variant}"
+  render_registry_variant \
+    "${custom_variant}" \
+    "${EXTENSION_REGISTRY_DB}" \
+    "${EXTENSION_MASTER_DATA_DB}" \
+    "${EXTENSION_STAFF_API_PORT}" \
+    "${EXTENSION_UI_PORT}" \
+    "${EXTENSION_WORKER_QUEUE}" \
+    "${EXTENSION_KEYCLOAK_CLIENT_ID}" \
+    "${EXTENSION_UI_APP_MNEMONIC}" \
+    "${REGISTRY_AUTH_ENABLED}"
+done < <(extension_manifest_list_variants)
+
 render "${ROOT_DIR}/templates/iam-staff-portal-api.env.tpl" \
   "${GENERATED_DIR}/iam/staff-portal-api.env" \
   "{{POSTGRES_HOST}}" "${POSTGRES_HOST}" \
@@ -173,10 +192,13 @@ render "${ROOT_DIR}/templates/iam-staff-portal-api.env.tpl" \
   "{{IAM_DATA_DIR}}" "${GENERATED_DIR}/iam/data" \
   "{{KEYCLOAK_IAM_CLIENT_SECRET}}" "${KEYCLOAK_IAM_CLIENT_SECRET}"
 
+REGISTRY_OIDC_AUDIENCES="$(bash -c 'source "'"${ROOT_DIR}"'/scripts/lib/extension-manifest.sh"; extension_manifest_build_oidc_audiences_json')"
+
 render "${ROOT_DIR}/templates/iam-data/login_providers.json.tpl" \
   "${GENERATED_DIR}/iam/data/login_providers.json" \
   "{{KEYCLOAK_URL}}" "${KEYCLOAK_URL}" \
-  "{{IAM_STAFF_PORT}}" "${IAM_STAFF_PORT}"
+  "{{IAM_STAFF_PORT}}" "${IAM_STAFF_PORT}" \
+  "{{REGISTRY_OIDC_AUDIENCES}}" "${REGISTRY_OIDC_AUDIENCES}"
 
 AWE_CONFIG_PATH="${GENERATED_DIR}/awe/config/default.yaml"
 mkdir -p "${GENERATED_DIR}/awe/config"

@@ -26,12 +26,56 @@ registry_variant_resolve_path() {
   echo "$(cd "$dir" && pwd)/${part}"
 }
 
+#!/usr/bin/env bash
+# Shared helpers for Registry Gen2 domain variants.
+
+registry_variant_root() {
+  echo "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+}
+
+registry_variant_load_env() {
+  local root
+  root="$(registry_variant_root)"
+  if [[ -f "${root}/.env" ]]; then
+    # shellcheck disable=SC1091
+    source "${root}/.env"
+  fi
+}
+
+registry_variant_resolve_path() {
+  local root="$1"
+  local path="$2"
+  if [[ "$path" != /* ]]; then
+    path="${root}/${path}"
+  fi
+  local dir part
+  dir="$(dirname "$path")"
+  part="$(basename "$path")"
+  echo "$(cd "$dir" && pwd)/${part}"
+}
+
+registry_variant_is_custom() {
+  local variant="$1"
+  # shellcheck disable=SC1091
+  source "$(dirname "${BASH_SOURCE[0]}")/extension-manifest.sh"
+  extension_manifest_is_builtin_variant "$variant" && return 1
+  extension_manifest_exists "$variant"
+}
+
 registry_variant_validate() {
   local variant="$1"
-  if [[ "$variant" != "farmer-registry" && "$variant" != "national-social-registry" ]]; then
-    echo "VARIANT must be farmer-registry or national-social-registry" >&2
-    return 1
+  if [[ "$variant" == "farmer-registry" || "$variant" == "national-social-registry" ]]; then
+    return 0
   fi
+  # shellcheck disable=SC1091
+  source "$(dirname "${BASH_SOURCE[0]}")/extension-manifest.sh"
+  if extension_manifest_exists "$variant"; then
+    return 0
+  fi
+  echo "Unknown VARIANT '${variant}'." >&2
+  echo "Built-in: farmer-registry, national-social-registry" >&2
+  echo "Custom: bootstrap with make extension-package NAME=${variant}" >&2
+  return 1
 }
 
 registry_variant_paths() {
@@ -64,6 +108,15 @@ registry_variant_paths() {
       UI_DIR="${NSR_REGISTRY_UI_PATH:-$DEFAULT_UI_DIR}"
       LABEL="National Social Registry"
       ;;
+    *)
+      # shellcheck disable=SC1091
+      source "$(dirname "${BASH_SOURCE[0]}")/extension-manifest.sh"
+      extension_manifest_load "$variant"
+      PRODUCT_REPO="${EXTENSION_PRODUCT_REPO_PATH}"
+      DB_SEED_DIR="${PRODUCT_REPO}/docker/db-seed"
+      UI_DIR="${DEFAULT_UI_DIR}"
+      LABEL="${EXTENSION_LABEL}"
+      ;;
   esac
 
   if [[ "$UI_DIR" != /* ]]; then
@@ -86,6 +139,12 @@ registry_variant_db_settings() {
       ;;
     national-social-registry)
       REGISTRY_DB_NAME="${NSR_REGISTRY_DB:-nsr_registry_db}"
+      ;;
+    *)
+      # shellcheck disable=SC1091
+      source "$(dirname "${BASH_SOURCE[0]}")/extension-manifest.sh"
+      extension_manifest_load "$variant"
+      REGISTRY_DB_NAME="${EXTENSION_REGISTRY_DB}"
       ;;
   esac
 

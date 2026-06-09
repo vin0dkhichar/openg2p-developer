@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stop native processes on registry variant ports so `make nsr-registry-run` reloads generated env.
+# Stop native processes on registry variant ports so `make *-registry-run` reloads generated env.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

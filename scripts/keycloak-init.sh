@@ -275,5 +275,10 @@ done
 
 ensure_dev_user
 
+if [[ -f /keycloak-ensure-extension-clients.sh ]]; then
+  OPENG2P_WORKSPACE="${OPENG2P_WORKSPACE:-/workspace}" \
+    bash /keycloak-ensure-extension-clients.sh || true
+fi
+
 echo "[keycloak-init] Done. Realm: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}"
 echo "[keycloak-init] Dev login: ${KEYCLOAK_DEV_USER} / ${KEYCLOAK_DEV_PASSWORD}"

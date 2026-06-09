@@ -5,13 +5,13 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck disable=SC1091
 source "${ROOT_DIR}/scripts/lib/registry-variant.sh"
 
-VARIANT="${VARIANT:-national-social-registry}"
+VARIANT="${VARIANT:-${1:-national-social-registry}}"
 registry_variant_validate "$VARIANT"
 registry_variant_paths "$VARIANT"
 
 if [[ ! -d "$DB_SEED_DIR" ]]; then
-  echo "db-seed directory not found at ${DB_SEED_DIR}. Run: make clone" >&2
-  exit 1
+  echo "No db-seed directory at ${DB_SEED_DIR}; skipping (optional for custom extensions)." >&2
+  exit 0
 fi
 
 if [[ ! -f "${DB_SEED_DIR}/requirements.txt" ]]; then

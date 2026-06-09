@@ -12,8 +12,8 @@ Use native mode for Odoo/FastAPI services and Docker for infrastructure:
 make setup
 make infra-up
 make install-odoo
-make install-registry-extension VARIANT=farmer-registry
-make install-registry-extension VARIANT=national-social-registry
+make farmer-setup
+make nsr-setup
 ```
 
 Then run each stack in separate terminals:

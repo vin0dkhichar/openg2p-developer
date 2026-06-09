@@ -43,8 +43,8 @@ make nsr-setup      # IAM, AWE, migrate, configuration seed
 make nsr-registry-run
 
 # Or Farmer Registry
-make install-registry-extension VARIANT=farmer-registry
-make farmer-registry-init && make farmer-registry-run
+make farmer-setup   # IAM, AWE, migrate, configuration seed
+make farmer-registry-run
 ```
 
 Run `make help` for all targets.
@@ -71,37 +71,54 @@ farmer-registry/farmer-extension/
 national-social-registry/nsr-extension/
 ```
 
-Native development installs the relevant extension into the platform API/Celery venvs:
+Native development installs the relevant extension into the platform API/Celery venvs. This step is **included** in `make farmer-setup`, `make nsr-setup`, and `make extension-setup`; run it manually only when reinstalling an extension or working step-by-step:
 
 ```bash
 make install-registry-extension VARIANT=farmer-registry
 make install-registry-extension VARIANT=national-social-registry
+make install-registry-extension VARIANT=disability-registry   # custom extension slug
 ```
+
+### Custom extension products
+
+Bootstrap a new empty extension repo (like FR/NSR) with one command:
+
+```bash
+make extension-package NAME=disability-registry   # extension + docker/ + helm/
+make extension-setup NAME=disability-registry
+make extension-run NAME=disability-registry
+```
+
+See [profiles/custom-registry-extension-dev.md](profiles/custom-registry-extension-dev.md).
 
 ### Shared infrastructure (Docker)
 
-| Service   | URL / Port                         | Default credentials   |
-|-----------|------------------------------------|-----------------------|
-| Postgres  | `localhost:5432`                   | `postgres` / `postgres` |
-| Redis     | `localhost:6379`                   | none                  |
-| MinIO     | API `:9000`, console `:9001`     | `admin` / `secret`    |
-| Keycloak  | `http://localhost:8080`            | `admin` / `admin`     |
+
+| Service  | URL / Port                   | Default credentials     |
+| -------- | ---------------------------- | ----------------------- |
+| Postgres | `localhost:5432`             | `postgres` / `postgres` |
+| Redis    | `localhost:6379`             | none                    |
+| MinIO    | API `:9000`, console `:9001` | `admin` / `secret`      |
+| Keycloak | `http://localhost:8080`      | `admin` / `admin`       |
+
 
 ### Application ports (native mode defaults)
 
-| Service                              | Port |
-|--------------------------------------|------|
-| PBMS Odoo                            | 8069 |
-| Farmer Registry staff API            | 8001 |
-| Farmer Registry staff UI             | 3000 |
-| National Social Registry staff API   | 8011 |
-| National Social Registry staff UI    | 3010 |
-| AWE API                              | 8030 |
-| AWE Admin UI                         | 8031 |
-| G2P Bridge partner API               | 8002 |
-| G2P Bridge example bank              | 8003 |
-| SPAR mapper API                      | 8004 |
-| SPAR bene portal API                 | 8005 |
+
+| Service                            | Port |
+| ---------------------------------- | ---- |
+| PBMS Odoo                          | 8069 |
+| Farmer Registry staff API          | 8001 |
+| Farmer Registry staff UI           | 3000 |
+| National Social Registry staff API | 8011 |
+| National Social Registry staff UI  | 3010 |
+| AWE API                            | 8030 |
+| AWE Admin UI                       | 8031 |
+| G2P Bridge partner API             | 8002 |
+| G2P Bridge example bank            | 8003 |
+| SPAR mapper API                    | 8004 |
+| SPAR bene portal API               | 8005 |
+
 
 Override ports in `.env`, then run `make generate`.
 
@@ -118,8 +135,9 @@ make install-odoo
 make install-registry-extension VARIANT=farmer-registry
 make install-registry-extension VARIANT=national-social-registry
 make install-registry-ui
-make farmer-registry-init
+make farmer-setup           # one-time Farmer Registry bootstrap (migrate + configuration seed)
 make nsr-setup              # one-time NSR bootstrap (migrate + configuration seed)
+make farmer-registry-init
 make nsr-registry-init
 
 # Infrastructure
@@ -161,6 +179,7 @@ See `profiles/` for curated stacks:
 
 - `minimal.md` — infrastructure only
 - `pbms-dev.md` — PBMS development
+- `custom-registry-extension-dev.md` — bootstrap a new empty Registry Gen2 extension product
 - `farmer-registry-dev.md` — Farmer Registry Gen2
 - `national-social-registry-dev.md` — National Social Registry Gen2
 - `pbms-bridge-dev.md` — PBMS + G2P Bridge integration
@@ -182,54 +201,60 @@ Default Odoo master password: `admin`
 
 ### Farmer Registry or National Social Registry
 
+Both variants use the same bootstrap model: IAM, AWE, extension install, migrate, and configuration seed.
+
+**Farmer Registry:**
+
 ```bash
-make clone
-make install-iam
-make iam-init
-make install-awe
-make awe-init
-make install-registry-extension VARIANT=farmer-registry
-make install-registry-ui
-make farmer-registry-init
-
-# Optional demo data
-LOAD_SAMPLE_DATA=true make farmer-registry-seed
-
+make setup
+make farmer-setup
 make farmer-registry-run
 ```
 
-`make infra-up` automatically creates the Keycloak `staff` realm, OIDC clients, and dev user `staff` / `staff`. See `keycloak/README.md`.
-
-For NSR, use the all-in-one bootstrap (includes migrate + configuration seed):
+**National Social Registry:**
 
 ```bash
+make setup
 make nsr-setup
 make nsr-registry-run
 ```
 
-Or run the steps individually:
+`make infra-up` automatically creates the Keycloak `staff` realm, OIDC clients, and dev user `staff` / `staff`. See `keycloak/README.md`.
+
+Optional demo data:
 
 ```bash
-make install-registry-extension VARIANT=national-social-registry
-make install-iam && make iam-init
-make install-awe && make awe-init
-make nsr-registry-init
+LOAD_SAMPLE_DATA=true make farmer-registry-seed
 LOAD_SAMPLE_DATA=true make nsr-registry-seed   # needs openg2p-data clone
-make nsr-registry-run
 ```
 
-Staff portal UI login: http://localhost:3010 (NSR) or http://localhost:3000 (Farmer) using `staff` / `staff`.
+Manual steps (if you prefer not to use `farmer-setup` / `nsr-setup`):
+
+```bash
+make infra-up
+make install-registry-extension VARIANT=farmer-registry   # or national-social-registry
+make install-registry-ui
+make install-iam && make iam-init
+make install-awe && make awe-init
+make farmer-registry-init   # or make nsr-registry-init
+make farmer-registry-run    # or make nsr-registry-run
+```
+
+Staff portal UI login: [http://localhost:3010](http://localhost:3010) (NSR) or [http://localhost:3000](http://localhost:3000) (Farmer) using `staff` / `staff`.
 
 Each variant uses its own database, generated env files, API/UI ports, and extension seed SQL. The staff portal UI repo is shared by default (`openg2p-registry-gen2-staff-portal-ui`), but each variant gets a separate `.env` and port so Farmer Registry and NSR can run together.
 
 Seed steps:
 
-| Step | Farmer Registry | National Social Registry |
-|------|-----------------|--------------------------|
-| Schema | `make farmer-registry-migrate` | `make nsr-registry-migrate` |
-| Configuration SQL | `make farmer-registry-seed` | `make nsr-registry-seed` |
-| Sample data | `LOAD_SAMPLE_DATA=true make farmer-registry-seed` | `LOAD_SAMPLE_DATA=true make nsr-registry-seed` |
-| All-in-one | `make farmer-registry-init` | `make nsr-registry-init` |
+
+| Step                  | Farmer Registry                                   | National Social Registry                       |
+| --------------------- | ------------------------------------------------- | ---------------------------------------------- |
+| One-time bootstrap    | `make farmer-setup`                               | `make nsr-setup`                               |
+| Schema                | `make farmer-registry-migrate`                    | `make nsr-registry-migrate`                    |
+| Configuration SQL     | `make farmer-registry-seed`                       | `make nsr-registry-seed`                       |
+| Sample data           | `LOAD_SAMPLE_DATA=true make farmer-registry-seed` | `LOAD_SAMPLE_DATA=true make nsr-registry-seed` |
+| Migrate + config only | `make farmer-registry-init`                       | `make nsr-registry-init`                       |
+
 
 ### G2P Bridge
 

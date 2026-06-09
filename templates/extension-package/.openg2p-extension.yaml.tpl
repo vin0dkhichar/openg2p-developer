@@ -1,0 +1,15 @@
+variant: {{VARIANT}}
+label: {{LABEL}}
+product_repo: {{PRODUCT_REPO}}
+extension_dir: {{EXTENSION_DIR_NAME}}
+python_module: {{PYTHON_MODULE}}
+pip_name: {{PIP_NAME}}
+variant_token: {{VARIANT_TOKEN}}
+registry_db: {{REGISTRY_DB}}
+master_data_db: {{MASTER_DATA_DB}}
+staff_api_port: {{STAFF_API_PORT}}
+ui_port: {{UI_PORT}}
+worker_queue: {{WORKER_QUEUE}}
+keycloak_client_id: {{KEYCLOAK_CLIENT_ID}}
+ui_app_mnemonic: {{UI_APP_MNEMONIC}}
+helm_chart: {{HELM_CHART_NAME}}

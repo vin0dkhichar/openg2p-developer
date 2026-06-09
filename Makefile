@@ -16,8 +16,9 @@ COMPOSE_PROFILES := --profile infra --profile pbms --profile farmer-registry --p
 .PHONY: help setup clone generate install-odoo install-iam install-awe install-registry-extension install-registry-ui install-registry-db-seed \
 	infra-up infra-down up down status logs clean \
 	pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
-	farmer-registry-init farmer-registry-migrate farmer-registry-seed \
+	farmer-setup farmer-registry-init farmer-registry-migrate farmer-registry-seed \
 	nsr-setup nsr-registry-init nsr-registry-migrate nsr-registry-seed seed-registry iam-init awe-init \
+	extension-package extension-setup extension-run extension-init extension-migrate extension-seed \
 	up-infra up-pbms up-farmer-registry up-nsr-registry up-farmer-registry-seed up-nsr-registry-seed up-bridge up-spar up-full
 
 help: ## Show available targets
@@ -41,8 +42,9 @@ install-registry-extension: ## Install domain extension (VARIANT=farmer-registry
 install-registry-ui: ## Install npm deps for Gen2 staff portal UI repo(s)
 	@bash scripts/install-registry-ui.sh
 
-install-registry-db-seed: ## Install db-seed Python deps (VARIANT=national-social-registry)
-	@VARIANT=$(or $(VARIANT),national-social-registry) bash scripts/install-registry-db-seed.sh
+install-registry-db-seed: ## Install db-seed Python deps (VARIANT=farmer-registry|national-social-registry|custom)
+	@test -n "$(VARIANT)" || (echo "Set VARIANT to your registry slug (e.g. disability-registry)" >&2; exit 1)
+	@bash scripts/install-registry-db-seed.sh $(VARIANT)
 
 install-iam: ## Install IAM staff portal API Python dependencies
 	@bash scripts/install-iam.sh
@@ -71,6 +73,9 @@ farmer-registry-migrate: generate ## Migrate Farmer Registry schema only
 farmer-registry-seed: generate ## Seed Farmer Registry configuration and optional sample data
 	@VARIANT=farmer-registry bash scripts/seed-registry-db.sh farmer-registry
 
+farmer-setup: generate infra-up ## One-time Farmer Registry bootstrap: IAM, AWE, migrate, and seed (honours LOAD_SAMPLE_DATA in .env)
+	@bash scripts/farmer-setup.sh
+
 nsr-setup: generate infra-up ## One-time NSR bootstrap: IAM, AWE, migrate, and seed (honours LOAD_SAMPLE_DATA in .env)
 	@bash scripts/nsr-setup.sh
 
@@ -83,9 +88,32 @@ nsr-registry-migrate: generate ## Migrate NSR schema only
 nsr-registry-seed: generate ## Seed NSR configuration and optional sample data
 	@VARIANT=national-social-registry bash scripts/seed-registry-db.sh national-social-registry
 
-seed-registry: generate ## Seed a registry variant (VARIANT=farmer-registry|national-social-registry)
-	@test -n "$(VARIANT)" || (echo "Set VARIANT=farmer-registry or VARIANT=national-social-registry" >&2; exit 1)
+seed-registry: generate ## Seed a registry variant (VARIANT=farmer-registry|national-social-registry|custom)
+	@test -n "$(VARIANT)" || (echo "Set VARIANT to your registry slug" >&2; exit 1)
 	@VARIANT=$(VARIANT) bash scripts/seed-registry-db.sh $(VARIANT)
+
+extension-package: ## Bootstrap empty extension product (NAME=disability-registry, optional REPO_URL=, SETUP=1)
+	@bash scripts/bootstrap-extension-package.sh "$(NAME)" "$(REPO_URL)"
+
+extension-setup: generate infra-up ## One-time setup for custom extension (NAME=disability-registry)
+	@test -n "$(NAME)" || (echo "Set NAME=your-extension-slug (same as extension-package)" >&2; exit 1)
+	@bash scripts/registry-setup.sh "$(NAME)"
+
+extension-init: generate ## Migrate + seed custom extension configuration (NAME=disability-registry)
+	@test -n "$(NAME)" || (echo "Set NAME=your-extension-slug" >&2; exit 1)
+	@VARIANT=$(NAME) bash scripts/init-registry-variant.sh "$(NAME)"
+
+extension-migrate: generate ## Migrate custom extension schema only (NAME=disability-registry)
+	@test -n "$(NAME)" || (echo "Set NAME=your-extension-slug" >&2; exit 1)
+	@VARIANT=$(NAME) bash scripts/migrate-registry-db.sh "$(NAME)"
+
+extension-seed: generate ## Seed custom extension configuration (NAME=disability-registry)
+	@test -n "$(NAME)" || (echo "Set NAME=your-extension-slug" >&2; exit 1)
+	@VARIANT=$(NAME) bash scripts/seed-registry-db.sh "$(NAME)"
+
+extension-run: generate ## Run custom extension natively (NAME=disability-registry)
+	@test -n "$(NAME)" || (echo "Set NAME=your-extension-slug" >&2; exit 1)
+	@bash scripts/run-registry-variant.sh "$(NAME)"
 
 infra-up: ## Start shared infrastructure (Postgres, Redis, MinIO, Keycloak)
 	@test -f .env || cp .env.example .env

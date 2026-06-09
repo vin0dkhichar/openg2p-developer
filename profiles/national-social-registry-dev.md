@@ -60,6 +60,8 @@ Configure policies in the AWE Admin UI or bind policies in the Registry staff po
 
 ## What `make nsr-setup` does
 
+Same steps as `make farmer-setup`, but for the NSR extension and `nsr_registry_db`.
+
 One command after `make setup` (starts infra automatically):
 
 1. Installs and initialises IAM and AWE

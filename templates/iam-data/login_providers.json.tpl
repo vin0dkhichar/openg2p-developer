@@ -12,7 +12,7 @@
     "scope": "openid profile email",
     "enable_pkce": true,
     "active": true,
-    "audiences": "[\"nsr-registry-staff-portal\", \"farmer-registry-staff-portal\", \"account\"]",
+    "audiences": {{REGISTRY_OIDC_AUDIENCES}},
     "adapter_name": "keycloak"
   }
 ]

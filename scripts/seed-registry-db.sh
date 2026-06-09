@@ -108,6 +108,13 @@ case "$VARIANT" in
       )
     fi
     ;;
+  *)
+    if [[ "$LOAD_SAMPLE_DATA" == "true" ]]; then
+      registry_variant_run_sql_tree "$SAMPLE_DATA_DIR" "sample data SQL"
+    else
+      echo "[seed] Skipping sample data (LOAD_SAMPLE_DATA=${LOAD_SAMPLE_DATA})."
+    fi
+    ;;
 esac
 
 echo "[seed] Done for ${LABEL}."
