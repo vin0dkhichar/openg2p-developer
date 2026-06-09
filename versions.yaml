@@ -72,6 +72,11 @@ repos:
     ref: develop
     path: openg2p-spar
 
+  awe:
+    url: https://github.com/OpenG2P/awe.git
+    ref: develop
+    path: awe
+
 images:
   pbms: openg2p/openg2p-pbms-core:1.2.6
   farmer_registry_staff_api: openg2p/openg2p-farmer-registry-staff-portal-api:develop
@@ -82,6 +87,8 @@ images:
   nsr_registry_celery: openg2p/openg2p-nsr-registry-celery:develop
   nsr_registry_ui: openg2p/openg2p-nsr-registry-staff-portal-ui:develop
   nsr_registry_db_seed: openg2p/openg2p-nsr-registry-db-seed:develop
+  awe_api: openg2p/openg2p-awe:develop
+  awe_ui: openg2p/openg2p-awe-ui:develop
   g2p_bridge_partner_api: openg2p/g2p-bridge-partner-api:develop
   g2p_bridge_bene_api: openg2p/g2p-bridge-bene-portal-api:develop
   g2p_bridge_celery: openg2p/g2p-bridge-celery:develop
@@ -120,6 +127,11 @@ profiles:
     description: SPAR mapper and beneficiary portal APIs
     requires: [infra]
     compose_profiles: [infra, spar]
+
+  awe:
+    description: Approval Workflow Engine for registry CR/intake approvals
+    requires: [infra, awe]
+    compose_profiles: [infra, awe]
 
   full:
     description: All infrastructure and containerized apps

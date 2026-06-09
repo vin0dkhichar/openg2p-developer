@@ -13,11 +13,11 @@ COMPOSE_PROFILES := --profile infra --profile pbms --profile farmer-registry --p
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup clone generate install-odoo install-registry-extension install-registry-ui \
+.PHONY: help setup clone generate install-odoo install-iam install-awe install-registry-extension install-registry-ui install-registry-db-seed \
 	infra-up infra-down up down status logs clean \
-	pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run \
+	pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
 	farmer-registry-init farmer-registry-migrate farmer-registry-seed \
-	nsr-registry-init nsr-registry-migrate nsr-registry-seed seed-registry \
+	nsr-setup nsr-registry-init nsr-registry-migrate nsr-registry-seed seed-registry iam-init awe-init \
 	up-infra up-pbms up-farmer-registry up-nsr-registry up-farmer-registry-seed up-nsr-registry-seed up-bridge up-spar up-full
 
 help: ## Show available targets
@@ -41,6 +41,27 @@ install-registry-extension: ## Install domain extension (VARIANT=farmer-registry
 install-registry-ui: ## Install npm deps for Gen2 staff portal UI repo(s)
 	@bash scripts/install-registry-ui.sh
 
+install-registry-db-seed: ## Install db-seed Python deps (VARIANT=national-social-registry)
+	@VARIANT=$(or $(VARIANT),national-social-registry) bash scripts/install-registry-db-seed.sh
+
+install-iam: ## Install IAM staff portal API Python dependencies
+	@bash scripts/install-iam.sh
+
+install-awe: ## Install Approval Workflow Engine (AWE) Python dependencies
+	@bash scripts/install-awe.sh
+
+iam-init: generate ## Migrate IAM schema and seed login providers
+	@bash scripts/init-iam.sh
+
+awe-init: generate ## Initialise AWE schema and registry webhook callback secret
+	@bash scripts/init-awe.sh
+
+iam-run: generate ## Run IAM staff portal API natively
+	@bash scripts/run-iam.sh
+
+awe-run: generate ## Run AWE API natively
+	@bash scripts/run-awe.sh
+
 farmer-registry-init: generate ## Migrate schema and seed Farmer Registry configuration
 	@VARIANT=farmer-registry bash scripts/init-registry-variant.sh farmer-registry
 
@@ -49,6 +70,9 @@ farmer-registry-migrate: generate ## Migrate Farmer Registry schema only
 
 farmer-registry-seed: generate ## Seed Farmer Registry configuration and optional sample data
 	@VARIANT=farmer-registry bash scripts/seed-registry-db.sh farmer-registry
+
+nsr-setup: generate infra-up ## One-time NSR bootstrap: IAM, AWE, migrate, and seed (honours LOAD_SAMPLE_DATA in .env)
+	@bash scripts/nsr-setup.sh
 
 nsr-registry-init: generate ## Migrate schema and seed NSR configuration
 	@VARIANT=national-social-registry bash scripts/init-registry-variant.sh national-social-registry
@@ -65,12 +89,16 @@ seed-registry: generate ## Seed a registry variant (VARIANT=farmer-registry|nati
 
 infra-up: ## Start shared infrastructure (Postgres, Redis, MinIO, Keycloak)
 	@test -f .env || cp .env.example .env
-	@$(COMPOSE) $(COMPOSE_FILES) --profile infra up -d
-	@echo "Infrastructure started."
-	@echo "  Postgres: localhost:$${POSTGRES_PORT:-5432}"
-	@echo "  Redis:    localhost:$${REDIS_PORT:-6379}"
-	@echo "  MinIO:    http://localhost:9000 (console :9001)"
-	@echo "  Keycloak: http://localhost:8080 (admin/admin by default)"
+	@bash -c 'set -a; source .env; set +a; $(COMPOSE) $(COMPOSE_FILES) --profile infra up -d'
+	@bash -c 'set -a; source .env; set +a; $(COMPOSE) -f compose/docker-compose.infra.yml --profile infra up keycloak-init --abort-on-container-exit' || true
+	@bash -c 'set -a; source .env; set +a; \
+		echo "Infrastructure started."; \
+		echo "  Postgres: localhost:$${POSTGRES_PORT:-5432}"; \
+		echo "  Redis:    localhost:$${REDIS_PORT:-6379}"; \
+		echo "  MinIO:    http://localhost:9000 (console :9001)"; \
+		echo "  Keycloak: http://localhost:8080 (admin/admin by default)"; \
+		echo "  Staff realm + OIDC clients are provisioned automatically (see keycloak/README.md)"; \
+		echo "  Dev SSO user: staff / staff (override in .env)"'
 
 infra-down: ## Stop shared infrastructure
 	@$(COMPOSE) $(COMPOSE_FILES) --profile infra down

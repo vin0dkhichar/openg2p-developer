@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Stop native processes on registry variant ports so `make nsr-registry-run` reloads generated env.
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/scripts/lib/registry-variant.sh"
+
+VARIANT="${1:-national-social-registry}"
+registry_variant_validate "$VARIANT"
+registry_variant_paths "$VARIANT"
+
+if [[ -f "${ROOT_DIR}/.env" ]]; then
+  # shellcheck disable=SC1091
+  source "${ROOT_DIR}/.env"
+fi
+
+IAM_STAFF_PORT="${IAM_STAFF_PORT:-8020}"
+AWE_API_PORT="${AWE_API_PORT:-8030}"
+
+free_port() {
+  local port="$1"
+  local label="$2"
+  local pids
+  pids="$(lsof -ti "tcp:${port}" 2>/dev/null || true)"
+  if [[ -z "$pids" ]]; then
+    return 0
+  fi
+  echo "Stopping ${label} (port ${port}) ..."
+  # shellcheck disable=SC2086
+  kill $pids 2>/dev/null || true
+  sleep 1
+  # shellcheck disable=SC2086
+  kill -9 $pids 2>/dev/null || true
+}
+
+# shellcheck disable=SC1090
+source "${GENERATED_DIR}/staff-portal-api.env"
+# shellcheck disable=SC1090
+source "${GENERATED_DIR}/staff-portal-ui.env"
+
+free_port "${REGISTRY_STAFF_PORTAL_API_APP_PORT}" "${VARIANT} staff API"
+free_port "${PORT}" "${VARIANT} staff UI"
+free_port "${IAM_STAFF_PORT}" "IAM staff API"
+free_port "${AWE_API_PORT}" "AWE API"
+
+echo "Ports cleared for ${LABEL}."

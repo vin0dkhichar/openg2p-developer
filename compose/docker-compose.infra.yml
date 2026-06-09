@@ -77,7 +77,7 @@ services:
     image: quay.io/keycloak/keycloak:26.0
     platform: linux/amd64
     container_name: openg2p-keycloak
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
@@ -86,6 +86,8 @@ services:
       KC_HOSTNAME_STRICT_HTTPS: "false"
     ports:
       - "8080:8080"
+    volumes:
+      - ../keycloak/realm-export:/opt/keycloak/data/import:ro
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
       interval: 10s
@@ -93,6 +95,36 @@ services:
       retries: 20
       start_period: 30s
     restart: unless-stopped
+
+  keycloak-init:
+    profiles: [infra, pbms, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
+    image: quay.io/keycloak/keycloak:26.0
+    platform: linux/amd64
+    container_name: openg2p-keycloak-init
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_HOST: keycloak
+      KEYCLOAK_PORT: "8080"
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-staff}
+      KEYCLOAK_IAM_CLIENT_SECRET: ${KEYCLOAK_IAM_CLIENT_SECRET:-dev-iam-staff-secret}
+      KEYCLOAK_DEV_USER: ${KEYCLOAK_DEV_USER:-staff}
+      KEYCLOAK_DEV_PASSWORD: ${KEYCLOAK_DEV_PASSWORD:-staff}
+      IAM_STAFF_PORT: ${IAM_STAFF_PORT:-8020}
+      FARMER_REGISTRY_UI_PORT: ${FARMER_REGISTRY_UI_PORT:-3000}
+      NSR_REGISTRY_UI_PORT: ${NSR_REGISTRY_UI_PORT:-3010}
+      PBMS_HTTP_PORT: ${PBMS_HTTP_PORT:-8069}
+      G2P_BRIDGE_API_PORT: ${G2P_BRIDGE_API_PORT:-8002}
+      SPAR_MAPPER_API_PORT: ${SPAR_MAPPER_API_PORT:-8004}
+      SPAR_BENE_API_PORT: ${SPAR_BENE_API_PORT:-8005}
+    volumes:
+      - ../scripts/keycloak-init.sh:/keycloak-init.sh:ro
+    entrypoint: ["/bin/bash", "/keycloak-init.sh"]
+    restart: "no"
 
 volumes:
   postgres_data:

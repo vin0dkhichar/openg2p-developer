@@ -15,6 +15,8 @@ make infra-up
 
 make install-registry-extension VARIANT=farmer-registry
 make install-registry-ui
+make install-iam && make iam-init
+make install-awe && make awe-init
 make farmer-registry-init
 
 # Optional demo registrants and supporting rows

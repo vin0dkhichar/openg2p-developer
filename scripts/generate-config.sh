@@ -39,14 +39,27 @@ FARMER_REGISTRY_STAFF_API_PORT="${FARMER_REGISTRY_STAFF_API_PORT:-8001}"
 FARMER_REGISTRY_UI_PORT="${FARMER_REGISTRY_UI_PORT:-3000}"
 NSR_REGISTRY_STAFF_API_PORT="${NSR_REGISTRY_STAFF_API_PORT:-8011}"
 NSR_REGISTRY_UI_PORT="${NSR_REGISTRY_UI_PORT:-3010}"
+IAM_STAFF_PORT="${IAM_STAFF_PORT:-8020}"
+KEYCLOAK_IAM_CLIENT_SECRET="${KEYCLOAK_IAM_CLIENT_SECRET:-dev-iam-staff-secret}"
+KEYCLOAK_REALM="${KEYCLOAK_REALM:-staff}"
+AWE_API_PORT="${AWE_API_PORT:-8030}"
+AWE_UI_PORT="${AWE_UI_PORT:-8031}"
+KEYCLOAK_AWE_RESOLVER_CLIENT_SECRET="${KEYCLOAK_AWE_RESOLVER_CLIENT_SECRET:-dev-awe-resolver-secret}"
+AWE_REGISTRY_CALLBACK_SECRET_ID="${AWE_REGISTRY_CALLBACK_SECRET_ID:-00000000-0000-4000-8000-000000000001}"
+AWE_REGISTRY_CALLBACK_HMAC_SECRET="${AWE_REGISTRY_CALLBACK_HMAC_SECRET:-dev-registry-awe-callback-secret}"
 G2P_BRIDGE_API_PORT="${G2P_BRIDGE_API_PORT:-8002}"
 G2P_BRIDGE_EXAMPLE_BANK_PORT="${G2P_BRIDGE_EXAMPLE_BANK_PORT:-8003}"
 SPAR_MAPPER_API_PORT="${SPAR_MAPPER_API_PORT:-8004}"
 SPAR_BENE_API_PORT="${SPAR_BENE_API_PORT:-8005}"
 
+# Registry staff API JWT middleware (keep false for local dev — true can cause dashboard login loops)
+REGISTRY_AUTH_ENABLED="${REGISTRY_AUTH_ENABLED:-false}"
+
 mkdir -p \
   "${GENERATED_DIR}/farmer-registry" \
   "${GENERATED_DIR}/national-social-registry" \
+  "${GENERATED_DIR}/iam/data" \
+  "${GENERATED_DIR}/awe" \
   "${GENERATED_DIR}/bridge" \
   "${GENERATED_DIR}/spar" \
   "${GENERATED_DIR}/odoo"
@@ -90,6 +103,7 @@ render_registry_variant() {
     "{{MINIO_ROOT_USER}}" "${MINIO_ROOT_USER}"
     "{{MINIO_ROOT_PASSWORD}}" "${MINIO_ROOT_PASSWORD}"
     "{{KEYCLOAK_URL}}" "${KEYCLOAK_URL}"
+    "{{IAM_STAFF_PORT}}" "${IAM_STAFF_PORT}"
     "{{REGISTRY_DB_NAME}}" "${db_name}"
     "{{REGISTRY_MASTER_DATA_DB_NAME}}" "${master_db_name}"
     "{{REGISTRY_STAFF_API_PORT}}" "${staff_api_port}"
@@ -98,6 +112,9 @@ render_registry_variant() {
     "{{REGISTRY_KEYCLOAK_CLIENT_ID}}" "${keycloak_client_id}"
     "{{REGISTRY_UI_APP_MNEMONIC}}" "${ui_app_mnemonic}"
     "{{REGISTRY_AUTH_ENABLED}}" "${auth_enabled}"
+    "{{AWE_API_PORT}}" "${AWE_API_PORT}"
+    "{{AWE_REGISTRY_CALLBACK_SECRET_ID}}" "${AWE_REGISTRY_CALLBACK_SECRET_ID}"
+    "{{AWE_REGISTRY_CALLBACK_HMAC_SECRET}}" "${AWE_REGISTRY_CALLBACK_HMAC_SECRET}"
   )
 
   render "${ROOT_DIR}/templates/registry-staff-portal-api.env.tpl" \
@@ -129,7 +146,7 @@ render_registry_variant \
   "farmer_registry_worker_queue" \
   "farmer-registry-staff-portal" \
   "farmer-registry-staff-portal" \
-  "false"
+  "${REGISTRY_AUTH_ENABLED}"
 
 render_registry_variant \
   "national-social-registry" \
@@ -140,7 +157,43 @@ render_registry_variant \
   "nsr_registry_worker_queue" \
   "nsr-registry-staff-portal" \
   "nsr-registry-staff-portal" \
-  "false"
+  "${REGISTRY_AUTH_ENABLED}"
+
+render "${ROOT_DIR}/templates/iam-staff-portal-api.env.tpl" \
+  "${GENERATED_DIR}/iam/staff-portal-api.env" \
+  "{{POSTGRES_HOST}}" "${POSTGRES_HOST}" \
+  "{{POSTGRES_PORT}}" "${POSTGRES_PORT}" \
+  "{{POSTGRES_PASSWORD}}" "${POSTGRES_PASSWORD}" \
+  "{{REDIS_HOST}}" "${REDIS_HOST}" \
+  "{{REDIS_PORT}}" "${REDIS_PORT}" \
+  "{{MINIO_ENDPOINT}}" "${MINIO_ENDPOINT}" \
+  "{{KEYCLOAK_URL}}" "${KEYCLOAK_URL}" \
+  "{{IAM_STAFF_PORT}}" "${IAM_STAFF_PORT}" \
+  "{{NSR_REGISTRY_STAFF_API_PORT}}" "${NSR_REGISTRY_STAFF_API_PORT}" \
+  "{{IAM_DATA_DIR}}" "${GENERATED_DIR}/iam/data" \
+  "{{KEYCLOAK_IAM_CLIENT_SECRET}}" "${KEYCLOAK_IAM_CLIENT_SECRET}"
+
+render "${ROOT_DIR}/templates/iam-data/login_providers.json.tpl" \
+  "${GENERATED_DIR}/iam/data/login_providers.json" \
+  "{{KEYCLOAK_URL}}" "${KEYCLOAK_URL}" \
+  "{{IAM_STAFF_PORT}}" "${IAM_STAFF_PORT}"
+
+AWE_CONFIG_PATH="${GENERATED_DIR}/awe/config/default.yaml"
+mkdir -p "${GENERATED_DIR}/awe/config"
+render "${ROOT_DIR}/templates/awe-config.yaml.tpl" "${AWE_CONFIG_PATH}" \
+  "{{KEYCLOAK_URL}}" "${KEYCLOAK_URL}" \
+  "{{KEYCLOAK_REALM}}" "${KEYCLOAK_REALM}" \
+  "{{KEYCLOAK_AWE_RESOLVER_CLIENT_SECRET}}" "${KEYCLOAK_AWE_RESOLVER_CLIENT_SECRET}"
+
+render "${ROOT_DIR}/templates/awe-api.env.tpl" "${GENERATED_DIR}/awe/awe-api.env" \
+  "{{POSTGRES_HOST}}" "${POSTGRES_HOST}" \
+  "{{POSTGRES_PORT}}" "${POSTGRES_PORT}" \
+  "{{POSTGRES_PASSWORD}}" "${POSTGRES_PASSWORD}" \
+  "{{KEYCLOAK_URL}}" "${KEYCLOAK_URL}" \
+  "{{KEYCLOAK_REALM}}" "${KEYCLOAK_REALM}" \
+  "{{AWE_API_PORT}}" "${AWE_API_PORT}" \
+  "{{AWE_CONFIG_PATH}}" "${AWE_CONFIG_PATH}" \
+  "{{KEYCLOAK_AWE_RESOLVER_CLIENT_SECRET}}" "${KEYCLOAK_AWE_RESOLVER_CLIENT_SECRET}"
 
 for tpl in "${ROOT_DIR}"/templates/bridge-*.env.tpl "${ROOT_DIR}"/templates/spar-*.env.tpl; do
   [[ -f "$tpl" ]] || continue

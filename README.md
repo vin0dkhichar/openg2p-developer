@@ -12,6 +12,10 @@ Shared infrastructure runs in Docker. Application services run **natively by def
 
 ## Prerequisites
 
+See **[docs/prerequisites.md](docs/prerequisites.md)** for the full pre-setup guide (hardware, ports, tools, auth flow, and pre-flight checks).
+
+Summary:
+
 - Docker Desktop (or Docker Engine + Compose v2)
 - Git
 - Python 3.10+ (3.11+ recommended for SPAR)
@@ -33,12 +37,14 @@ cd openg2p-developer
 cp .env.example .env
 make setup          # clone repos + generate configs
 make infra-up       # postgres, redis, minio, keycloak
-make install-odoo   # first-time Odoo dependency install
 
-make farmer-registry-run   # Farmer Registry on http://localhost:8001
-# or
-make nsr-registry-run      # National Social Registry on http://localhost:8011
-make pbms-run              # PBMS on http://localhost:8069
+# National Social Registry (recommended one-time bootstrap)
+make nsr-setup      # IAM, AWE, migrate, configuration seed
+make nsr-registry-run
+
+# Or Farmer Registry
+make install-registry-extension VARIANT=farmer-registry
+make farmer-registry-init && make farmer-registry-run
 ```
 
 Run `make help` for all targets.
@@ -90,6 +96,8 @@ make install-registry-extension VARIANT=national-social-registry
 | Farmer Registry staff UI             | 3000 |
 | National Social Registry staff API   | 8011 |
 | National Social Registry staff UI    | 3010 |
+| AWE API                              | 8030 |
+| AWE Admin UI                         | 8031 |
 | G2P Bridge partner API               | 8002 |
 | G2P Bridge example bank              | 8003 |
 | SPAR mapper API                      | 8004 |
@@ -111,6 +119,7 @@ make install-registry-extension VARIANT=farmer-registry
 make install-registry-extension VARIANT=national-social-registry
 make install-registry-ui
 make farmer-registry-init
+make nsr-setup              # one-time NSR bootstrap (migrate + configuration seed)
 make nsr-registry-init
 
 # Infrastructure
@@ -175,6 +184,10 @@ Default Odoo master password: `admin`
 
 ```bash
 make clone
+make install-iam
+make iam-init
+make install-awe
+make awe-init
 make install-registry-extension VARIANT=farmer-registry
 make install-registry-ui
 make farmer-registry-init
@@ -185,14 +198,27 @@ LOAD_SAMPLE_DATA=true make farmer-registry-seed
 make farmer-registry-run
 ```
 
-For NSR, swap the variant name:
+`make infra-up` automatically creates the Keycloak `staff` realm, OIDC clients, and dev user `staff` / `staff`. See `keycloak/README.md`.
+
+For NSR, use the all-in-one bootstrap (includes migrate + configuration seed):
+
+```bash
+make nsr-setup
+make nsr-registry-run
+```
+
+Or run the steps individually:
 
 ```bash
 make install-registry-extension VARIANT=national-social-registry
+make install-iam && make iam-init
+make install-awe && make awe-init
 make nsr-registry-init
 LOAD_SAMPLE_DATA=true make nsr-registry-seed   # needs openg2p-data clone
 make nsr-registry-run
 ```
+
+Staff portal UI login: http://localhost:3010 (NSR) or http://localhost:3000 (Farmer) using `staff` / `staff`.
 
 Each variant uses its own database, generated env files, API/UI ports, and extension seed SQL. The staff portal UI repo is shared by default (`openg2p-registry-gen2-staff-portal-ui`), but each variant gets a separate `.env` and port so Farmer Registry and NSR can run together.
 

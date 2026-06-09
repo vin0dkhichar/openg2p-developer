@@ -28,6 +28,8 @@ if [[ ! -f "${GENERATED_DIR}/staff-portal-api.env" ]]; then
   exit 1
 fi
 
+bash "${ROOT_DIR}/scripts/free-variant-ports.sh" "$VARIANT"
+
 run_service() {
   local name="$1"
   local dir="$2"
@@ -58,8 +60,19 @@ run_service() {
 echo "${LABEL} native stack"
 echo "One-time setup:"
 echo "  make install-registry-extension VARIANT=${VARIANT}"
+echo "  make install-iam && make iam-init"
+echo "  make install-awe && make awe-init"
 echo "  make ${VARIANT//-/_}-init"
 echo
+
+AWE_DIR="${OPENG2P_WORKSPACE}/awe"
+AWE_ENV="${ROOT_DIR}/generated/awe/awe-api.env"
+if [[ -f "$AWE_ENV" && -d "${AWE_DIR}/venv" ]]; then
+  run_service "awe-api" "$AWE_DIR" "$AWE_ENV" \
+    bash -c 'exec uvicorn awe.main:app --host "${UVICORN_HOST:-0.0.0.0}" --port "${UVICORN_PORT}" --log-level info'
+else
+  echo "AWE not ready. Run: make install-awe && make awe-init" >&2
+fi
 
 run_service "${VARIANT}-staff-api" "$API_DIR" "${GENERATED_DIR}/staff-portal-api.env" \
   python -m openg2p_registry_staff_portal_api.main run
@@ -67,7 +80,17 @@ run_service "${VARIANT}-staff-api" "$API_DIR" "${GENERATED_DIR}/staff-portal-api
 run_service "${VARIANT}-celery-worker" "$CELERY_DIR" "${GENERATED_DIR}/celery-workers.env" \
   celery -A main worker -l info
 
+IAM_API_DIR="${OPENG2P_WORKSPACE}/openg2p-iam-service/iam-staff-portal-api"
+IAM_ENV="${ROOT_DIR}/generated/iam/staff-portal-api.env"
+if [[ -f "$IAM_ENV" && -d "$IAM_API_DIR/venv" ]]; then
+  run_service "iam-staff-api" "$IAM_API_DIR" "$IAM_ENV" \
+    python -m iam_staff_portal_api.main run
+else
+  echo "IAM staff API not ready. Run: make install-iam && make iam-init" >&2
+fi
+
 if [[ -d "$UI_DIR" ]]; then
+  cp "${GENERATED_DIR}/staff-portal-ui.env" "${UI_DIR}/.env.local"
   run_service "${VARIANT}-staff-ui" "$UI_DIR" "${GENERATED_DIR}/staff-portal-ui.env" \
     npm run dev
 else

@@ -43,6 +43,13 @@ case "$VARIANT" in
     fi
     ;;
   national-social-registry)
+    if [[ "$LOAD_SAMPLE_DATA" == "true" || "$LOAD_TEMPLATES" == "true" || "$LOAD_IMAGES" == "true" ]]; then
+      if [[ ! -x "${DB_SEED_DIR}/venv/bin/python" ]]; then
+        echo "[seed] Installing db-seed Python dependencies ..."
+        VARIANT=national-social-registry bash "${ROOT_DIR}/scripts/install-registry-db-seed.sh"
+      fi
+    fi
+
     if [[ "$LOAD_SAMPLE_DATA" == "true" ]]; then
       OPENG2P_DATA_DIR="${OPENG2P_DATA_DIR:-${OPENG2P_WORKSPACE}/openg2p-data}"
       NSR_SEED_DATA_DIR="${NSR_SEED_DATA_DIR:-${DB_SEED_DIR}/seed-data}"

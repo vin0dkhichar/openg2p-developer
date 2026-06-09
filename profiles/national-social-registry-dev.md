@@ -1,5 +1,7 @@
 # National Social Registry development profile
 
+> **Before you start:** complete [Prerequisites](../docs/prerequisites.md) (tools, ports, IAM/Keycloak auth flow).
+
 National Social Registry (NSR) is a Registry Gen2 domain implementation for national social-protection registers.
 
 ## Goal
@@ -11,30 +13,64 @@ Run the shared Registry Gen2 platform with the `nsr-extension` Python package in
 ```bash
 cp .env.example .env
 make setup
-make infra-up
+make nsr-setup      # infra + IAM + AWE + migrate + configuration seed
 
-make install-registry-extension VARIANT=national-social-registry
-make install-registry-ui
-make nsr-registry-init
-
-# Optional demo registrants, sub-tables, templates, and images
+# Optional demo registrants (set LOAD_SAMPLE_DATA=true in .env first, or run manually)
 LOAD_SAMPLE_DATA=true make nsr-registry-seed
 # LOAD_TEMPLATES=true LOAD_IMAGES=true make nsr-registry-seed
 
 make nsr-registry-run
 ```
 
+Equivalent manual steps (if you prefer not to use `nsr-setup`):
+
+```bash
+make infra-up
+make install-registry-extension VARIANT=national-social-registry
+make install-registry-ui
+make install-iam && make iam-init
+make install-awe && make awe-init
+make nsr-registry-init
+```
+
 ## URLs
 
-- Staff API: http://localhost:8011/docs
-- Staff UI: http://localhost:3010
+- Staff API: [http://localhost:8011/docs](http://localhost:8011/docs)
+- Staff UI: [http://localhost:3010](http://localhost:3010)
+- AWE API: [http://localhost:8030/v1/awe/docs](http://localhost:8030/v1/awe/docs)
+- AWE Admin UI (optional): [http://localhost:8031](http://localhost:8031) — policy authoring; login via Keycloak `staff` user with `AWE_ADMIN` role
+
+## Approval workflow (AWE)
+
+Change requests and intake submissions route approvals through **AWE** (Approval Workflow Engine):
+
+```text
+Registry Staff API → AWE API (:8030) → approver tasks in Staff UI
+AWE → webhook → Registry Staff API /awe/webhooks/decision
+```
+
+`make nsr-registry-run` starts AWE alongside IAM and the registry stack when `make install-awe && make awe-init` has been run.
+
+Configure policies in the AWE Admin UI or bind policies in the Registry staff portal under **Configuration → AWE Policy Configuration**.
 
 ## Databases
 
 - `nsr_registry_db` — registry data (schema + configuration seed)
 - `nsr_master_data_db` — master data
 
-## What `nsr-registry-init` does
+## What `make nsr-setup` does
+
+One command after `make setup` (starts infra automatically):
+
+1. Installs and initialises IAM and AWE
+2. Installs the NSR extension and staff portal UI dependencies
+3. Installs db-seed Python tools (for optional sample data / MinIO uploads)
+4. Migrates schema into `nsr_registry_db`
+5. Applies extension `meta_data/*.sql` — register definitions, schemas, tabs, themes, branding
+
+Set `LOAD_SAMPLE_DATA=true` in `.env` before `make nsr-setup` to also load demo registrants in the same run.
+
+## What `make nsr-registry-init` does
 
 1. `python main.py migrate` — creates/updates schema in `nsr_registry_db`
 2. Applies extension `meta_data/*.sql` — register definitions, schemas, tabs, themes, registry branding
@@ -70,12 +106,16 @@ Farmer Registry uses the same UI repo on port `3000` with a separate generated e
 
 ## Repos involved
 
-| Repo | Purpose |
-|------|---------|
-| `registry-platform` | Shared Gen2 APIs and Celery |
-| `national-social-registry` | Domain extension + db-seed tooling |
-| `openg2p-data` | Shared demography CSVs for NSR sample load |
-| `openg2p-registry-gen2-staff-portal-ui` | Staff portal frontend |
+
+| Repo                                    | Purpose                                    |
+| --------------------------------------- | ------------------------------------------ |
+| `registry-platform`                     | Shared Gen2 APIs and Celery                |
+| `national-social-registry`              | Domain extension + db-seed tooling         |
+| `openg2p-iam-service`                   | SSO broker for staff portal login          |
+| `awe`                                   | Approval Workflow Engine (CR + intake)     |
+| `openg2p-data`                          | Shared demography CSVs for NSR sample load |
+| `openg2p-registry-gen2-staff-portal-ui` | Staff portal frontend                      |
+
 
 ## Optional container mode
 
@@ -87,5 +127,6 @@ Uses images such as `openg2p/openg2p-nsr-registry-staff-portal-api:develop`.
 
 ## References
 
-- https://github.com/OpenG2P/national-social-registry
-- https://docs.openg2p.org/products/registry
+- [https://github.com/OpenG2P/national-social-registry](https://github.com/OpenG2P/national-social-registry)
+- [https://docs.openg2p.org/products/registry](https://docs.openg2p.org/products/registry)
+

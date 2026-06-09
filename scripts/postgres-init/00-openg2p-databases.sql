@@ -63,6 +63,14 @@ $$;
 SELECT 'CREATE DATABASE spardb OWNER sparuser'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'spardb')\gexec
 
+-- IAM Staff Portal API
+SELECT 'CREATE DATABASE iam_staff OWNER postgres'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'iam_staff')\gexec
+
+-- Approval Workflow Engine (AWE)
+SELECT 'CREATE DATABASE awe OWNER postgres'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'awe')\gexec
+
 -- Required for registry search indexes during Alembic migration
 \c nsr_registry_db
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
