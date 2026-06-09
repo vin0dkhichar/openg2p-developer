@@ -18,17 +18,20 @@ COMPOSE_PROFILES := --profile infra --profile pbms --profile farmer-registry --p
 	pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
 	farmer-setup farmer-registry-init farmer-registry-migrate farmer-registry-seed \
 	nsr-setup nsr-registry-init nsr-registry-migrate nsr-registry-seed seed-registry iam-init awe-init \
-	extension-package extension-setup extension-run extension-init extension-migrate extension-seed \
+	extension-package extension-setup extension-run extension-init extension-migrate extension-seed clone-profiles \
 	up-infra up-pbms up-farmer-registry up-nsr-registry up-farmer-registry-seed up-nsr-registry-seed up-bridge up-spar up-full
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2}'
 
-setup: clone generate ## Clone repos and generate local configs
-	@echo "Setup complete. Next: make infra-up"
+setup: clone generate ## Clone repos (PROFILE=registry) and generate local configs
+	@echo "Setup complete (profile: $(or $(PROFILE),registry)). Next: make infra-up"
 
-clone: ## Clone/update OpenG2P product repositories
-	@bash scripts/clone-repos.sh
+clone: ## Clone product repos for a profile (PROFILE=registry|national-social-registry|farmer-registry|pbms|bridge|spar|full)
+	@bash scripts/clone-repos.sh "$(or $(PROFILE),registry)"
+
+clone-profiles: ## List available clone/setup profiles
+	@bash -c 'source scripts/lib/clone-profiles.sh; clone_profile_list'
 
 generate: ## Generate Odoo conf and service env files from templates
 	@bash scripts/generate-config.sh

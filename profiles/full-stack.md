@@ -38,9 +38,11 @@ This starts infrastructure plus container profiles for PBMS, Farmer Registry, NS
 
 - [ ] Postgres databases created (`make infra-up`)
 - [ ] Keycloak clients configured (`keycloak/README.md`)
+- [ ] ID Generator healthy on :8040 (`curl http://localhost:8040/v1/idgenerator/health`)
 - [ ] PBMS reachable on :8069
 - [ ] Farmer Registry staff API reachable on :8001
 - [ ] NSR staff API reachable on :8011
+- [ ] Registry Celery beat + worker running (native `make *-registry-run`, or check logs for `functional_id_allocation_beat_producer`)
 - [ ] G2P Bridge partner API reachable on :8002
 - [ ] SPAR mapper API reachable on :8004
 - [ ] PBMS bridge addon configured to local bridge URL

@@ -35,8 +35,8 @@ git clone https://github.com/shibu-narayanan/openg2p-developer.git
 cd openg2p-developer
 
 cp .env.example .env
-make setup          # clone repos + generate configs
-make infra-up       # postgres, redis, minio, keycloak
+make setup PROFILE=national-social-registry   # clone only NSR-related repos
+make infra-up
 
 # National Social Registry (recommended one-time bootstrap)
 make nsr-setup      # IAM, AWE, migrate, configuration seed
@@ -53,12 +53,23 @@ Run `make help` for all targets.
 
 ```text
 openg2p-developer/              <- this repo (orchestration)
-../openg2p-workspace/           <- cloned product repos (default)
+../openg2p-workspace/           <- cloned product repos (OPENG2P_WORKSPACE)
 generated/                      <- generated odoo conf + .env files (gitignored)
 compose/                        <- docker compose profiles
 scripts/                        <- clone, generate, run helpers
 templates/                      <- config templates
 profiles/                       <- curated developer stacks
+```
+
+Clone only what you need:
+
+```bash
+make clone-profiles                              # list profiles
+make setup PROFILE=national-social-registry      # NSR repos only
+make setup PROFILE=farmer-registry               # Farmer Registry repos only
+make setup PROFILE=registry                      # both registries (default)
+make setup PROFILE=pbms                          # Odoo / PBMS only
+make setup PROFILE=full                          # everything
 ```
 
 ### Registry Gen2 model
@@ -71,13 +82,31 @@ farmer-registry/farmer-extension/
 national-social-registry/nsr-extension/
 ```
 
-Native development installs the relevant extension into the platform API/Celery venvs. This step is **included** in `make farmer-setup`, `make nsr-setup`, and `make extension-setup`; run it manually only when reinstalling an extension or working step-by-step:
+Native development installs the relevant extension into three platform venvs (staff API, Celery worker, Celery beat producers). This step is **included** in `make farmer-setup`, `make nsr-setup`, and `make extension-setup`; run it manually only when reinstalling an extension or working step-by-step:
 
 ```bash
 make install-registry-extension VARIANT=farmer-registry
 make install-registry-extension VARIANT=national-social-registry
 make install-registry-extension VARIANT=disability-registry   # custom extension slug
 ```
+
+### Registry async processing (Celery)
+
+Registry Gen2 uses **two native Celery processes** per variant (started by `make farmer-registry-run`, `make nsr-registry-run`, or `make extension-run`):
+
+
+| Process                   | Code path                                                         | Role                                                                                                             |
+| ------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Celery beat producers** | `registry-platform/celery/openg2p-registry-celery-beat-producers` | Polls DB work queues (functional IDs, dedup, ingest, scores) and enqueues worker tasks on Redis                  |
+| **Celery worker**         | `registry-platform/celery/openg2p-registry-celery-workers`        | Executes tasks from the variant worker queue (`farmer_registry_worker_queue`, `nsr_registry_worker_queue`, etc.) |
+
+
+Generated env files (after `make generate`):
+
+- `generated/<variant>/celery-beat.env` — beat DB + `REGISTRY_CELERY_BEAT_WORKER_QUEUE`
+- `generated/<variant>/celery-workers.env` — worker DB, MinIO, ID Generator URL, `REGISTRY_CELERY_WORKERS_WORKER_QUEUE`
+
+The beat and worker queues **must match** (same value in both files). Functional ID assignment also requires the **ID Generator** Docker service (`:8040`, started with `make infra-up`) and matching `id_types` in `config/id-generator/default.yaml`.
 
 ### Custom extension products
 
@@ -94,12 +123,13 @@ See [profiles/custom-registry-extension-dev.md](profiles/custom-registry-extensi
 ### Shared infrastructure (Docker)
 
 
-| Service  | URL / Port                   | Default credentials     |
-| -------- | ---------------------------- | ----------------------- |
-| Postgres | `localhost:5432`             | `postgres` / `postgres` |
-| Redis    | `localhost:6379`             | none                    |
-| MinIO    | API `:9000`, console `:9001` | `admin` / `secret`      |
-| Keycloak | `http://localhost:8080`      | `admin` / `admin`       |
+| Service      | URL / Port                   | Default credentials     |
+| ------------ | ---------------------------- | ----------------------- |
+| Postgres     | `localhost:5432`             | `postgres` / `postgres` |
+| Redis        | `localhost:6379`             | none                    |
+| MinIO        | API `:9000`, console `:9001` | `admin` / `secret`      |
+| Keycloak     | `http://localhost:8080`      | `admin` / `admin`       |
+| ID Generator | `http://localhost:8040`      | none (registry IDs)     |
 
 
 ### Application ports (native mode defaults)
@@ -114,6 +144,7 @@ See [profiles/custom-registry-extension-dev.md](profiles/custom-registry-extensi
 | National Social Registry staff UI  | 3010 |
 | AWE API                            | 8030 |
 | AWE Admin UI                       | 8031 |
+| ID Generator                       | 8040 |
 | G2P Bridge partner API             | 8002 |
 | G2P Bridge example bank            | 8003 |
 | SPAR mapper API                    | 8004 |

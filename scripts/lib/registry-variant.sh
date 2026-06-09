@@ -17,41 +17,12 @@ registry_variant_load_env() {
 registry_variant_resolve_path() {
   local root="$1"
   local path="$2"
+  # shellcheck disable=SC1091
+  source "$(dirname "${BASH_SOURCE[0]}")/workspace-path.sh"
   if [[ "$path" != /* ]]; then
     path="${root}/${path}"
   fi
-  local dir part
-  dir="$(dirname "$path")"
-  part="$(basename "$path")"
-  echo "$(cd "$dir" && pwd)/${part}"
-}
-
-#!/usr/bin/env bash
-# Shared helpers for Registry Gen2 domain variants.
-
-registry_variant_root() {
-  echo "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-}
-
-registry_variant_load_env() {
-  local root
-  root="$(registry_variant_root)"
-  if [[ -f "${root}/.env" ]]; then
-    # shellcheck disable=SC1091
-    source "${root}/.env"
-  fi
-}
-
-registry_variant_resolve_path() {
-  local root="$1"
-  local path="$2"
-  if [[ "$path" != /* ]]; then
-    path="${root}/${path}"
-  fi
-  local dir part
-  dir="$(dirname "$path")"
-  part="$(basename "$path")"
-  echo "$(cd "$dir" && pwd)/${part}"
+  workspace_resolve "$path"
 }
 
 registry_variant_is_custom() {
@@ -90,6 +61,7 @@ registry_variant_paths() {
 
   API_DIR="${REGISTRY_ROOT}/apis/openg2p-registry-staff-portal-api"
   CELERY_DIR="${REGISTRY_ROOT}/celery/openg2p-registry-celery-workers"
+  CELERY_BEAT_DIR="${REGISTRY_ROOT}/celery/openg2p-registry-celery-beat-producers"
   DEFAULT_UI_DIR="${OPENG2P_WORKSPACE}/openg2p-registry-gen2-staff-portal-ui"
   FALLBACK_UI_DIR="${REGISTRY_ROOT}/ui/staff-portal-ui"
 

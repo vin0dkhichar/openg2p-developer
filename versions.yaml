@@ -97,6 +97,7 @@ images:
   redis: redis:7-alpine
   minio: minio/minio:latest
   keycloak: quay.io/keycloak/keycloak:26.0
+  id_generator: openg2p/openg2p-id-generator:1.0.0
 
 profiles:
   infra:

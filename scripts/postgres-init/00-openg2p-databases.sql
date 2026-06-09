@@ -71,6 +71,10 @@ WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'iam_staff')\gexec
 SELECT 'CREATE DATABASE awe OWNER postgres'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'awe')\gexec
 
+-- OpenG2P ID Generator (functional / registry IDs)
+SELECT 'CREATE DATABASE idgenerator OWNER postgres'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'idgenerator')\gexec
+
 -- Required for registry search indexes during Alembic migration
 \c nsr_registry_db
 CREATE EXTENSION IF NOT EXISTS pg_trgm;

@@ -96,6 +96,39 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  id-generator:
+    profiles: [infra, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, full]
+    image: ${ID_GENERATOR_IMAGE:-openg2p/openg2p-id-generator:1.0.0}
+    container_name: openg2p-id-generator
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: idgenerator
+      DB_USER: ${POSTGRES_SUPERUSER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      CONFIG_PATH: /app/config/default.yaml
+      UVICORN_HOST: 0.0.0.0
+      UVICORN_PORT: 8000
+      UVICORN_LOG_LEVEL: info
+    ports:
+      - "${ID_GENERATOR_PORT:-8040}:8000"
+    volumes:
+      - ../config/id-generator/default.yaml:/app/config/default.yaml:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/v1/idgenerator/health')\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
   keycloak-init:
     profiles: [infra, pbms, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
     image: quay.io/keycloak/keycloak:26.0

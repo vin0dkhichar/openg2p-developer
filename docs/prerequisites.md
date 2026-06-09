@@ -117,6 +117,7 @@ The default `.env.example` binds services to the ports below. **Each port must b
 | IAM Staff Portal API      | 8020         | `http://localhost:8020`             |
 | AWE API                   | 8030         | `http://localhost:8030/v1/awe/docs` |
 | AWE Admin UI              | 8031         | `http://localhost:8031`             |
+| ID Generator              | 8040         | `http://localhost:8040/v1/idgenerator/health` |
 | NSR staff API             | 8011         | `http://localhost:8011/docs`        |
 | NSR staff UI              | 3010         | `http://localhost:3010`             |
 | Farmer Registry staff API | 8001         | `http://localhost:8001/docs`        |
@@ -127,7 +128,7 @@ The default `.env.example` binds services to the ports below. **Each port must b
 ### Check ports before setup
 
 ```bash
-for p in 5433 6379 8080 8020 8030 8011 3010; do
+for p in 5433 6379 8080 8020 8030 8040 8011 3010; do
   if lsof -i tcp:$p >/dev/null 2>&1; then
     echo "IN USE: $p"
   else
@@ -284,7 +285,7 @@ cd openg2p-developer
 cp .env.example .env
 
 # 4. Port check (adjust list for your profile)
-for p in 5433 6379 8080 8020 8030 8011 3010; do
+for p in 5433 6379 8080 8020 8030 8040 8011 3010; do
   lsof -i tcp:$p >/dev/null 2>&1 && echo "busy $p" || echo "ok   $p"
 done
 ```
@@ -303,6 +304,9 @@ done
 | `AWE-ERR-008` / `AWE_BEARER_TOKEN_REQUIRED` on task stats | Registry API auth disabled in local dev (by design)                                                    | Expected with default `REGISTRY_AUTH_ENABLED=false`; other dashboard stats still work. Enable only if you accept stricter auth: set `REGISTRY_AUTH_ENABLED=true` in `.env`, run `make generate`, restart API |
 | Dashboard or paging reload loop / repeated login          | Stale registry API still running with old env (often `AUTH_ENABLED=true` from a prior `make generate`) | Run `make generate` then `make nsr-registry-run` — it now stops old processes on ports 8011/8020/8030/3010 before restart. Confirm `generated/.../staff-portal-api.env` has `AUTH_ENABLED="false"`           |
 | `make infra-up` ignores `.env` ports                      | Old Makefile behaviour                                                                                 | Ensure you are on a recent `main` branch where `infra-up` sources `.env` before compose                                                                                                                      |
+| ID Generator times out on setup/run                       | Container not started, or Postgres volume predates `idgenerator` DB                                    | Run `make infra-up`; if Postgres already existed, create DB manually: `docker compose -f compose/docker-compose.infra.yml exec postgres psql -U postgres -c 'CREATE DATABASE idgenerator;'` then restart id-generator |
+| Functional IDs never assigned / queue stays PENDING       | Celery beat not running, worker on wrong queue, or missing ID type in config                           | Run `make generate` then `make install-registry-extension VARIANT=...` and restart `make *-registry-run`. Confirm beat + worker logs; check `grep WORKER_QUEUE generated/<variant>/celery-*.env` and `config/id-generator/default.yaml` |
+| Celery beat "not ready" on registry run                   | Beat venv not installed                                                                                | `make install-registry-extension VARIANT=national-social-registry` (installs worker + beat venvs) then `make generate` |
 
 
 ---
@@ -324,9 +328,11 @@ done
 
 ### National Social Registry (NSR)
 
-- Repos: `registry-platform`, `national-social-registry`, `openg2p-iam-service`, `openg2p-registry-gen2-staff-portal-ui`, `**awe**`
-- Databases created on first infra start: `nsr_registry_db`, `nsr_master_data_db`, `iam_staff`, `**awe**`
-- One-time bootstrap: `**make nsr-setup**` (install IAM/AWE/extension, migrate schema, seed configuration SQL)
+- Repos: `registry-platform`, `national-social-registry`, `openg2p-iam-service`, `openg2p-registry-gen2-staff-portal-ui`, **`awe`**
+- Databases created on first infra start: `nsr_registry_db`, `nsr_master_data_db`, `iam_staff`, `awe`, `idgenerator`
+- ID Generator (Docker): `http://localhost:8040` — required for functional ID assignment on registers with `functional_id_generation_required=true` (NSR Individual/Household)
+- Celery: `make nsr-registry-run` starts **beat producers** + **worker** (native). Env: `generated/national-social-registry/celery-beat.env` and `celery-workers.env`; queue `nsr_registry_worker_queue`
+- One-time bootstrap: **`make nsr-setup`** (install IAM/AWE/extension including Celery venvs, migrate schema, seed configuration SQL)
 - Optional demo data: `LOAD_SAMPLE_DATA=true make nsr-registry-seed` (needs `openg2p-data` clone from `make setup`)
 
 ### Custom Registry Gen2 extension
@@ -344,8 +350,10 @@ See [profiles/custom-registry-extension-dev.md](../profiles/custom-registry-exte
 ### Farmer Registry
 
 - Repos: `registry-platform`, `farmer-registry`, `openg2p-iam-service`, `openg2p-registry-gen2-staff-portal-ui`, **`awe`**
-- Databases created on first infra start: `farmer_registry_db`, `farmer_master_data_db`, `iam_staff`, **`awe`**
-- One-time bootstrap: **`make farmer-setup`** (install IAM/AWE/extension, migrate schema, seed configuration SQL)
+- Databases created on first infra start: `farmer_registry_db`, `farmer_master_data_db`, `iam_staff`, `awe`, `idgenerator`
+- ID Generator (Docker): `http://localhost:8040` — wired into Celery workers when functional IDs are enabled on a register
+- Celery: `make farmer-registry-run` starts **beat producers** + **worker** (native). Env: `generated/farmer-registry/celery-beat.env` and `celery-workers.env`; queue `farmer_registry_worker_queue`
+- One-time bootstrap: **`make farmer-setup`** (install IAM/AWE/extension including Celery venvs, migrate schema, seed configuration SQL)
 - Optional demo data: `LOAD_SAMPLE_DATA=true make farmer-registry-seed`
 
 ### PBMS (Odoo)
@@ -359,7 +367,7 @@ See [profiles/custom-registry-extension-dev.md](../profiles/custom-registry-exte
 
 When the checklist above passes:
 
-1. `make setup` — clone product repos and generate configs
+1. `make setup` — clone product repos and generate configs (`PROFILE=national-social-registry` for NSR-only, `PROFILE=registry` default)
 2. `make farmer-setup` or `make nsr-setup` — start infra, install services, migrate, and seed configuration for your registry variant
 3. Follow the profile for your subsystem, for example [profiles/national-social-registry-dev.md](../profiles/national-social-registry-dev.md) or [profiles/farmer-registry-dev.md](../profiles/farmer-registry-dev.md)
 

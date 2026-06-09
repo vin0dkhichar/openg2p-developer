@@ -39,6 +39,22 @@ make nsr-registry-init
 - Staff UI: [http://localhost:3010](http://localhost:3010)
 - AWE API: [http://localhost:8030/v1/awe/docs](http://localhost:8030/v1/awe/docs)
 - AWE Admin UI (optional): [http://localhost:8031](http://localhost:8031) — policy authoring; login via Keycloak `staff` user with `AWE_ADMIN` role
+- ID Generator: [http://localhost:8040/v1/idgenerator/health](http://localhost:8040/v1/idgenerator/health) (Docker, from `make infra-up`)
+
+## Native stack (`make nsr-registry-run`)
+
+Starts these processes (after `make nsr-setup`):
+
+| Process | Env file |
+| ------- | -------- |
+| AWE API | `generated/awe/awe-api.env` |
+| NSR staff API | `generated/national-social-registry/staff-portal-api.env` |
+| Celery worker | `generated/national-social-registry/celery-workers.env` |
+| Celery beat producers | `generated/national-social-registry/celery-beat.env` |
+| IAM staff API | `generated/iam/staff-portal-api.env` |
+| Staff UI | `generated/national-social-registry/staff-portal-ui.env` |
+
+Beat producers poll async work queues and dispatch tasks to Redis queue `nsr_registry_worker_queue`; the worker consumes that queue. Re-run `make generate` and `make install-registry-extension VARIANT=national-social-registry` after pulling orchestration changes.
 
 ## Approval workflow (AWE)
 
@@ -57,6 +73,9 @@ Configure policies in the AWE Admin UI or bind policies in the Registry staff po
 
 - `nsr_registry_db` — registry data (schema + configuration seed)
 - `nsr_master_data_db` — master data
+- `idgenerator` — functional ID pools (OpenG2P ID Generator Docker service on `:8040`)
+
+NSR registers **Individual** and **Household** require functional IDs. Celery beat producers poll the queue and dispatch workers; both use queue `nsr_registry_worker_queue` (see generated `celery-beat.env` and `celery-workers.env`). ID allocation calls `http://localhost:8040/v1/idgenerator/{register_mnemonic}/id`.
 
 ## What `make nsr-setup` does
 
@@ -65,7 +84,7 @@ Same steps as `make farmer-setup`, but for the NSR extension and `nsr_registry_d
 One command after `make setup` (starts infra automatically):
 
 1. Installs and initialises IAM and AWE
-2. Installs the NSR extension and staff portal UI dependencies
+2. Installs the NSR extension, **Celery worker + beat**, and staff portal UI dependencies
 3. Installs db-seed Python tools (for optional sample data / MinIO uploads)
 4. Migrates schema into `nsr_registry_db`
 5. Applies extension `meta_data/*.sql` — register definitions, schemas, tabs, themes, branding
@@ -111,7 +130,7 @@ Farmer Registry uses the same UI repo on port `3000` with a separate generated e
 
 | Repo                                    | Purpose                                    |
 | --------------------------------------- | ------------------------------------------ |
-| `registry-platform`                     | Shared Gen2 APIs and Celery                |
+| `registry-platform`                     | Shared Gen2 APIs, Celery worker, Celery beat producers |
 | `national-social-registry`              | Domain extension + db-seed tooling         |
 | `openg2p-iam-service`                   | SSO broker for staff portal login          |
 | `awe`                                   | Approval Workflow Engine (CR + intake)     |

@@ -4,23 +4,25 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-if [[ -f .env ]]; then
-  # shellcheck disable=SC1091
-  source .env
-fi
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/scripts/lib/workspace-path.sh"
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/scripts/lib/clone-profiles.sh"
 
-resolve_path() {
-  local path="$1"
-  if [[ "$path" != /* ]]; then
-    path="${ROOT_DIR}/${path}"
-  fi
-  local dir part
-  dir="$(dirname "$path")"
-  part="$(basename "$path")"
-  echo "$(cd "$dir" && pwd)/${part}"
-}
+PROFILE="${1:-${PROFILE:-${SETUP_PROFILE:-registry}}}"
+PROFILE="$(clone_profile_normalize "$PROFILE")"
 
-OPENG2P_WORKSPACE="$(resolve_path "${OPENG2P_WORKSPACE:-../openg2p-workspace}")"
+OPENG2P_WORKSPACE="$(workspace_open)"
+mkdir -p "$OPENG2P_WORKSPACE"
+
+ODOO_REF="${ODOO_REF:-17.0}"
+PBMS_REF="${PBMS_REF:-develop}"
+REGISTRY_REF="${REGISTRY_REF:-develop}"
+FARMER_REGISTRY_REF="${FARMER_REGISTRY_REF:-develop}"
+NSR_REF="${NSR_REF:-develop}"
+G2P_BRIDGE_REF="${G2P_BRIDGE_REF:-develop}"
+SPAR_REF="${SPAR_REF:-develop}"
+AWE_REF="${AWE_REF:-develop}"
 
 clone_repo() {
   local name="$1"
@@ -44,33 +46,77 @@ clone_repo() {
   fi
 }
 
-mkdir -p "$OPENG2P_WORKSPACE"
+clone_repo_key() {
+  local key="$1"
+  case "$key" in
+    odoo)
+      clone_repo "Odoo 17" "https://github.com/odoo/odoo.git" "$ODOO_REF" "odoo17"
+      ;;
+    pbms)
+      clone_repo "OpenG2P PBMS Odoo" "https://github.com/OpenG2P/openg2p-pbms-odoo.git" "$PBMS_REF" "openg2p-pbms-odoo"
+      ;;
+    pbms_community_addons)
+      clone_repo "OpenG2P PBMS Community Addons" "https://github.com/OpenG2P/openg2p-pbms-community-addons.git" "17.0-develop" "openg2p-pbms-community-addons"
+      ;;
+    pbms_extensions)
+      clone_repo "OpenG2P PBMS Extensions" "https://github.com/OpenG2P/openg2p-pbms-odoo-extensions.git" "$PBMS_REF" "openg2p-pbms-odoo-extensions"
+      ;;
+    openg2p_registry)
+      clone_repo "OpenG2P Registry Odoo" "https://github.com/OpenG2P/openg2p-registry.git" "17.0-develop" "openg2p-registry"
+      ;;
+    odoo_commons)
+      clone_repo "OpenG2P Odoo Commons" "https://github.com/OpenG2P/openg2p-odoo-commons.git" "$PBMS_REF" "openg2p-odoo-commons"
+      ;;
+    registry_platform)
+      clone_repo "Registry Platform" "https://github.com/OpenG2P/registry-platform.git" "$REGISTRY_REF" "registry-platform"
+      ;;
+    registry_gen2_staff_portal_ui)
+      clone_repo "Registry Gen2 Staff Portal UI" "https://github.com/OpenG2P/openg2p-registry-gen2-staff-portal-ui.git" "$REGISTRY_REF" "openg2p-registry-gen2-staff-portal-ui"
+      ;;
+    openg2p_iam)
+      clone_repo "OpenG2P IAM Service" "https://github.com/OpenG2P/openg2p-iam-service.git" "$REGISTRY_REF" "openg2p-iam-service"
+      ;;
+    openg2p_data)
+      clone_repo "OpenG2P Sample Data" "https://github.com/OpenG2P/openg2p-data.git" "develop" "openg2p-data"
+      ;;
+    farmer_registry)
+      clone_repo "Farmer Registry" "https://github.com/OpenG2P/farmer-registry.git" "$FARMER_REGISTRY_REF" "farmer-registry"
+      ;;
+    national_social_registry)
+      clone_repo "National Social Registry" "https://github.com/OpenG2P/national-social-registry.git" "$NSR_REF" "national-social-registry"
+      ;;
+    g2p_bridge)
+      clone_repo "G2P Bridge" "https://github.com/OpenG2P/g2p-bridge.git" "$G2P_BRIDGE_REF" "g2p-bridge"
+      ;;
+    spar)
+      clone_repo "SPAR" "https://github.com/OpenG2P/openg2p-spar.git" "$SPAR_REF" "openg2p-spar"
+      ;;
+    awe)
+      clone_repo "Approval Workflow Engine (AWE)" "https://github.com/OpenG2P/awe.git" "$AWE_REF" "awe"
+      ;;
+    *)
+      echo "Unknown repository key: ${key}" >&2
+      return 1
+      ;;
+  esac
+}
 
-ODOO_REF="${ODOO_REF:-17.0}"
-PBMS_REF="${PBMS_REF:-develop}"
-REGISTRY_REF="${REGISTRY_REF:-develop}"
-FARMER_REGISTRY_REF="${FARMER_REGISTRY_REF:-develop}"
-NSR_REF="${NSR_REF:-develop}"
-G2P_BRIDGE_REF="${G2P_BRIDGE_REF:-develop}"
-SPAR_REF="${SPAR_REF:-develop}"
-AWE_REF="${AWE_REF:-develop}"
+REPO_KEYS="$(clone_profile_repo_keys "$PROFILE" || exit 1)"
 
-clone_repo "Odoo 17" "https://github.com/odoo/odoo.git" "$ODOO_REF" "odoo17"
-clone_repo "OpenG2P PBMS Odoo" "https://github.com/OpenG2P/openg2p-pbms-odoo.git" "$PBMS_REF" "openg2p-pbms-odoo"
-clone_repo "OpenG2P PBMS Community Addons" "https://github.com/OpenG2P/openg2p-pbms-community-addons.git" "17.0-develop" "openg2p-pbms-community-addons"
-clone_repo "OpenG2P PBMS Extensions" "https://github.com/OpenG2P/openg2p-pbms-odoo-extensions.git" "$PBMS_REF" "openg2p-pbms-odoo-extensions"
-clone_repo "OpenG2P Registry Odoo" "https://github.com/OpenG2P/openg2p-registry.git" "17.0-develop" "openg2p-registry"
-clone_repo "OpenG2P Odoo Commons" "https://github.com/OpenG2P/openg2p-odoo-commons.git" "$PBMS_REF" "openg2p-odoo-commons"
-clone_repo "Registry Platform" "https://github.com/OpenG2P/registry-platform.git" "$REGISTRY_REF" "registry-platform"
-clone_repo "Registry Gen2 Staff Portal UI" "https://github.com/OpenG2P/openg2p-registry-gen2-staff-portal-ui.git" "$REGISTRY_REF" "openg2p-registry-gen2-staff-portal-ui"
-clone_repo "OpenG2P IAM Service" "https://github.com/OpenG2P/openg2p-iam-service.git" "$REGISTRY_REF" "openg2p-iam-service"
-clone_repo "OpenG2P Sample Data" "https://github.com/OpenG2P/openg2p-data.git" "develop" "openg2p-data"
-clone_repo "Farmer Registry" "https://github.com/OpenG2P/farmer-registry.git" "$FARMER_REGISTRY_REF" "farmer-registry"
-clone_repo "National Social Registry" "https://github.com/OpenG2P/national-social-registry.git" "$NSR_REF" "national-social-registry"
-clone_repo "G2P Bridge" "https://github.com/OpenG2P/g2p-bridge.git" "$G2P_BRIDGE_REF" "g2p-bridge"
-clone_repo "SPAR" "https://github.com/OpenG2P/openg2p-spar.git" "$SPAR_REF" "openg2p-spar"
-clone_repo "Approval Workflow Engine (AWE)" "https://github.com/OpenG2P/awe.git" "$AWE_REF" "awe"
+echo "============================================="
+echo " Clone profile: ${PROFILE}"
+echo " Workspace    : ${OPENG2P_WORKSPACE}"
+echo "============================================="
+
+if [[ -z "$REPO_KEYS" ]]; then
+  echo "No product repositories required for profile '${PROFILE}'."
+else
+  for key in $REPO_KEYS; do
+    clone_repo_key "$key"
+  done
+fi
 
 echo
-echo "All repositories are available under: ${OPENG2P_WORKSPACE}"
+echo "Repositories for profile '${PROFILE}' are under: ${OPENG2P_WORKSPACE}"
+echo "Other profiles: make clone-profiles"
 echo "Next: make generate && make infra-up"

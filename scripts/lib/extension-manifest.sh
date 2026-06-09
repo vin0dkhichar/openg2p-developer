@@ -27,10 +27,9 @@ extension_manifest_resolve_path() {
 }
 
 extension_manifest_workspace() {
-  local root
-  root="$(extension_manifest_root)"
-  extension_manifest_load_env
-  extension_manifest_resolve_path "$root" "${OPENG2P_WORKSPACE:-../openg2p-workspace}"
+  # shellcheck disable=SC1091
+  source "$(dirname "${BASH_SOURCE[0]}")/workspace-path.sh"
+  workspace_open
 }
 
 extension_manifest_file_for_variant() {
