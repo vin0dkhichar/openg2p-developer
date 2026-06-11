@@ -98,7 +98,7 @@ Set `LOAD_SAMPLE_DATA=true` in `.env` before `make nsr-setup` to also load demo 
 
 ## Sample data
 
-NSR demo data uses `openg2p-data` CSVs plus JSON seed files from the product repo:
+NSR demo data uses `openg2p-data` demography files (`individuals.json` / `households.json`, converted to CSV automatically) plus JSON seed files from the product repo:
 
 ```bash
 LOAD_SAMPLE_DATA=true make nsr-registry-seed
@@ -134,7 +134,7 @@ Farmer Registry uses the same UI repo on port `3000` with a separate generated e
 | `national-social-registry`              | Domain extension + db-seed tooling         |
 | `openg2p-iam-service`                   | SSO broker for staff portal login          |
 | `awe`                                   | Approval Workflow Engine (CR + intake)     |
-| `openg2p-data`                          | Shared demography CSVs for NSR sample load |
+| `openg2p-data`                          | Shared demography JSON for NSR sample load (auto-converted to CSV) |
 | `openg2p-registry-gen2-staff-portal-ui` | Staff portal frontend                      |
 
 
