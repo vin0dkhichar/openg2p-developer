@@ -63,6 +63,11 @@ ensure_db() {
 ensure_db "$REGISTRY_DB"
 ensure_db "$MASTER_DB"
 
+# Shared infra DBs (Postgres volume may predate docker init script entries).
+for shared_db in iam_staff awe idgenerator; do
+  ensure_db "$shared_db"
+done
+
 echo "[postgres] Ensuring pg_trgm on ${REGISTRY_DB} ..."
 psql -d "$REGISTRY_DB" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
 
