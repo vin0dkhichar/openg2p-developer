@@ -376,4 +376,4 @@ PRs welcome. When adding a subsystem:
 
 ## License
 
-Apache-2.0 (same spirit as OpenG2P ecosystem; adjust if needed)
+This project is licensed under the [Mozilla Public License 2.0](LICENSE).
