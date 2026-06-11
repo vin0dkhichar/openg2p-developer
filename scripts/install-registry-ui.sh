@@ -25,7 +25,16 @@ for ui_path in "${UI_DIRS[@]}"; do
     continue
   fi
 
-  if [[ " ${installed[*]} " == *" ${ui_path} "* ]]; then
+  duplicated=0
+  if [[ ${#installed[@]} -gt 0 ]]; then
+    for prev in "${installed[@]}"; do
+      if [[ "$prev" == "$ui_path" ]]; then
+        duplicated=1
+        break
+      fi
+    done
+  fi
+  if [[ "$duplicated" -eq 1 ]]; then
     continue
   fi
   installed+=("$ui_path")

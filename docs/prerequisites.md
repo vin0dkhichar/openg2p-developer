@@ -48,7 +48,7 @@ Docker Desktop should be allocated at least **4 GB RAM** if you run the full inf
 
 | OS      | Supported | Notes                                                                       |
 | ------- | --------- | --------------------------------------------------------------------------- |
-| macOS   | Yes       | Most tested. Keycloak runs as `linux/amd64` under Rosetta on Apple Silicon. |
+| macOS   | Yes       | Most tested. Keycloak and ID Generator run as `linux/amd64` under Rosetta on Apple Silicon. |
 | Linux   | Yes       | Use Docker Engine + Compose plugin.                                         |
 | Windows | Partial   | Use WSL2 with Docker Desktop integration; run all commands inside WSL.      |
 
@@ -112,17 +112,17 @@ The default `.env.example` binds services to the ports below. **Each port must b
 ### Application services (native, typical NSR stack)
 
 
-| Service                   | Default port | URL                                 |
-| ------------------------- | ------------ | ----------------------------------- |
-| IAM Staff Portal API      | 8020         | `http://localhost:8020`             |
-| AWE API                   | 8030         | `http://localhost:8030/v1/awe/docs` |
-| AWE Admin UI              | 8031         | `http://localhost:8031`             |
+| Service                   | Default port | URL                                           |
+| ------------------------- | ------------ | --------------------------------------------- |
+| IAM Staff Portal API      | 8020         | `http://localhost:8020`                       |
+| AWE API                   | 8030         | `http://localhost:8030/v1/awe/docs`           |
+| AWE Admin UI              | 8031         | `http://localhost:8031`                       |
 | ID Generator              | 8040         | `http://localhost:8040/v1/idgenerator/health` |
-| NSR staff API             | 8011         | `http://localhost:8011/docs`        |
-| NSR staff UI              | 3010         | `http://localhost:3010`             |
-| Farmer Registry staff API | 8001         | `http://localhost:8001/docs`        |
-| Farmer Registry staff UI  | 3000         | `http://localhost:3000`             |
-| PBMS (Odoo)               | 8069         | `http://localhost:8069`             |
+| NSR staff API             | 8011         | `http://localhost:8011/docs`                  |
+| NSR staff UI              | 3010         | `http://localhost:3010`                       |
+| Farmer Registry staff API | 8001         | `http://localhost:8001/docs`                  |
+| Farmer Registry staff UI  | 3000         | `http://localhost:3000`                       |
+| PBMS (Odoo)               | 8069         | `http://localhost:8069`                       |
 
 
 ### Check ports before setup
@@ -256,8 +256,8 @@ Requirements:
 
 1. **Python 3.11+** for the AWE service (`make install-awe`)
 2. **Port 8030** free for AWE API (8031 optional for AWE Admin UI)
-3. `**awe` database** on shared Postgres (created by `postgres-init` or `make awe-init`)
-4. `**make awe-init`** seeds the registry webhook callback secret shared with the registry API env
+3. **`awe` database** on shared Postgres (created by `postgres-init` or `make awe-init`)
+4. **`make awe-init`** seeds the registry webhook callback secret shared with the registry API env
 5. Registry staff API env must have `REGISTRY_STAFF_PORTAL_API_AWE_ENABLED=true` (set automatically by `make generate`)
 
 `make nsr-registry-run` / `make farmer-registry-run` start AWE when `make install-awe && make awe-init` has completed.
@@ -295,18 +295,18 @@ done
 ## Common blockers (resolve before setup)
 
 
-| Symptom                                                   | Likely cause                                                                                           | Fix                                                                                                                                                                                                          |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Postgres fails to bind                                    | Local Postgres on 5432/5433                                                                            | Set `POSTGRES_PORT=5433` (or another free port) in `.env`, then `make generate`                                                                                                                              |
-| Keycloak crashes on Apple Silicon                         | Architecture mismatch                                                                                  | Already handled via `platform: linux/amd64` in compose; ensure Docker Desktop is up to date                                                                                                                  |
-| UI login returns 500 on `/api/login`                      | UI started without generated env                                                                       | Use `make nsr-registry-run` (copies env to `.env.local`) or source `generated/.../staff-portal-ui.env` before `npm run dev`                                                                                  |
-| Callback error `Login Provider Id not received`           | Expired OAuth state, or callback page refreshed                                                        | Restart login from UI; complete within 5 minutes; do not refresh `/auth/callback`                                                                                                                            |
-| `AWE-ERR-008` / `AWE_BEARER_TOKEN_REQUIRED` on task stats | Registry API auth disabled in local dev (by design)                                                    | Expected with default `REGISTRY_AUTH_ENABLED=false`; other dashboard stats still work. Enable only if you accept stricter auth: set `REGISTRY_AUTH_ENABLED=true` in `.env`, run `make generate`, restart API |
-| Dashboard or paging reload loop / repeated login          | Stale registry API still running with old env (often `AUTH_ENABLED=true` from a prior `make generate`) | Run `make generate` then `make nsr-registry-run` — it now stops old processes on ports 8011/8020/8030/3010 before restart. Confirm `generated/.../staff-portal-api.env` has `AUTH_ENABLED="false"`           |
-| `make infra-up` ignores `.env` ports                      | Old Makefile behaviour                                                                                 | Ensure you are on a recent `main` branch where `infra-up` sources `.env` before compose                                                                                                                      |
-| ID Generator times out on setup/run                       | Container not started, or Postgres volume predates `idgenerator` DB                                    | Run `make infra-up`; if Postgres already existed, create DB manually: `docker compose -f compose/docker-compose.infra.yml exec postgres psql -U postgres -c 'CREATE DATABASE idgenerator;'` then restart id-generator |
+| Symptom                                                   | Likely cause                                                                                           | Fix                                                                                                                                                                                                                                     |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Postgres fails to bind                                    | Local Postgres on 5432/5433                                                                            | Set `POSTGRES_PORT=5433` (or another free port) in `.env`, then `make generate`                                                                                                                                                         |
+| Keycloak crashes on Apple Silicon                         | Architecture mismatch                                                                                  | Already handled via `platform: linux/amd64` in compose (Keycloak and ID Generator); ensure Docker Desktop is up to date                                                                                                                 |
+| UI login returns 500 on `/api/login`                      | UI started without generated env                                                                       | Use `make nsr-registry-run` (copies env to `.env.local`) or source `generated/.../staff-portal-ui.env` before `npm run dev`                                                                                                             |
+| Callback error `Login Provider Id not received`           | Expired OAuth state, or callback page refreshed                                                        | Restart login from UI; complete within 5 minutes; do not refresh `/auth/callback`                                                                                                                                                       |
+| `AWE-ERR-008` / `AWE_BEARER_TOKEN_REQUIRED` on task stats | Registry API auth disabled in local dev (by design)                                                    | Expected with default `REGISTRY_AUTH_ENABLED=false`; other dashboard stats still work. Enable only if you accept stricter auth: set `REGISTRY_AUTH_ENABLED=true` in `.env`, run `make generate`, restart API                            |
+| Dashboard or paging reload loop / repeated login          | Stale registry API still running with old env (often `AUTH_ENABLED=true` from a prior `make generate`) | Run `make generate` then `make nsr-registry-run` — it now stops old processes on ports 8011/8020/8030/3010 before restart. Confirm `generated/.../staff-portal-api.env` has `AUTH_ENABLED="false"`                                      |
+| `make infra-up` ignores `.env` ports                      | Old Makefile behaviour                                                                                 | Ensure you are on a recent `main` branch where `infra-up` sources `.env` before compose                                                                                                                                                 |
+| ID Generator times out on setup/run                       | Container not started, or Postgres volume predates `idgenerator` DB                                    | Run `make infra-up`; if Postgres already existed, create DB manually: `docker compose -f compose/docker-compose.infra.yml exec postgres psql -U postgres -c 'CREATE DATABASE idgenerator;'` then restart id-generator                   |
 | Functional IDs never assigned / queue stays PENDING       | Celery beat not running, worker on wrong queue, or missing ID type in config                           | Run `make generate` then `make install-registry-extension VARIANT=...` and restart `make *-registry-run`. Confirm beat + worker logs; check `grep WORKER_QUEUE generated/<variant>/celery-*.env` and `config/id-generator/default.yaml` |
-| Celery beat "not ready" on registry run                   | Beat venv not installed                                                                                | `make install-registry-extension VARIANT=national-social-registry` (installs worker + beat venvs) then `make generate` |
+| Celery beat "not ready" on registry run                   | Beat venv not installed                                                                                | `make install-registry-extension VARIANT=national-social-registry` (installs worker + beat venvs) then `make generate`                                                                                                                  |
 
 
 ---

@@ -99,6 +99,7 @@ services:
   id-generator:
     profiles: [infra, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, full]
     image: ${ID_GENERATOR_IMAGE:-openg2p/openg2p-id-generator:1.0.0}
+    platform: linux/amd64
     container_name: openg2p-id-generator
     depends_on:
       postgres:
