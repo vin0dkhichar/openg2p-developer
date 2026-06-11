@@ -20,7 +20,7 @@ Typical stacks include **National Social Registry (NSR)**, **Farmer Registry**, 
 Before starting setup, confirm all of the following:
 
 - Docker Desktop (or Docker Engine + Compose v2) is installed and running
-- Git, Make, Python 3.10+, and Node.js 18+ are available on your `PATH`
+- Git, Make, Python 3.11–3.13 (3.14 works for most services; db-seed needs psycopg2-binary ≥2.9.12), and Node.js 18+ are available on your `PATH`
 - Default ports listed below are free (or you plan to override them in `.env`)
 - You have ~20 GB free disk space for clones, Docker volumes, and Python/Node dependencies
 - You can reach GitHub (or your internal mirrors) to clone OpenG2P repositories
@@ -307,6 +307,7 @@ done
 | ID Generator times out on setup/run                       | Container not started, or Postgres volume predates `idgenerator` DB                                    | Run `make infra-up`; if Postgres already existed, create DB manually: `docker compose -f compose/docker-compose.infra.yml exec postgres psql -U postgres -c 'CREATE DATABASE idgenerator;'` then restart id-generator                   |
 | Functional IDs never assigned / queue stays PENDING       | Celery beat not running, worker on wrong queue, or missing ID type in config                           | Run `make generate` then `make install-registry-extension VARIANT=...` and restart `make *-registry-run`. Confirm beat + worker logs; check `grep WORKER_QUEUE generated/<variant>/celery-*.env` and `config/id-generator/default.yaml` |
 | Celery beat "not ready" on registry run                   | Beat venv not installed                                                                                | `make install-registry-extension VARIANT=national-social-registry` (installs worker + beat venvs) then `make generate`                                                                                                                  |
+| `psycopg2-binary` build fails on Python 3.14 during setup | Product `db-seed/requirements.txt` pins `psycopg2-binary==2.9.9` (no cp314 wheel)                      | Pull latest `openg2p-developer` `main` (install script upgrades to `psycopg2-binary>=2.9.12`), remove `docker/db-seed/venv`, re-run `make nsr-setup`. Or set `OPENG2P_PYTHON=python3.13` in `.env`.                                    |
 
 
 ---
