@@ -64,6 +64,9 @@ case "$VARIANT" in
         exit 1
       fi
 
+      echo "[seed] Preparing demography CSVs from openg2p-data JSON (if needed) ..."
+      python3 "${ROOT_DIR}/scripts/openg2p-data-demography-to-csv.py" "$OPENG2P_DATA_DIR"
+
       echo "[seed] Loading NSR sample data via ${LOAD_SCRIPT} ..."
       (
         cd "$DB_SEED_DIR"

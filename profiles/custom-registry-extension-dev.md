@@ -64,15 +64,17 @@ disability-registry/
 
 Naming rules (from `disability-registry`):
 
-| Item | Example |
-|------|---------|
-| Extension folder | `disability-extension` |
-| Python module | `openg2p_registry_disability_extension` |
-| Postgres DBs | `disability_registry_db`, `disability_master_data_db` |
-| Docker images | `openg2p/openg2p-disability-registry-staff-portal-api:develop`, etc. |
-| Helm chart | `helm/openg2p-disability-registry/` |
-| Keycloak client | `disability-registry-staff-portal` |
-| Default ports | API `8041`, UI `3020` (auto-increment if taken) |
+
+| Item             | Example                                                              |
+| ---------------- | -------------------------------------------------------------------- |
+| Extension folder | `disability-extension`                                               |
+| Python module    | `openg2p_registry_disability_extension`                              |
+| Postgres DBs     | `disability_registry_db`, `disability_master_data_db`                |
+| Docker images    | `openg2p/openg2p-disability-registry-staff-portal-api:develop`, etc. |
+| Helm chart       | `helm/openg2p-disability-registry/`                                  |
+| Keycloak client  | `disability-registry-staff-portal`                                   |
+| Default ports    | API `8041`, UI `3020` (auto-increment if taken)                      |
+
 
 ## Local native development
 
@@ -82,6 +84,11 @@ make extension-run NAME=disability-registry
 ```
 
 Staff UI uses the shared `openg2p-registry-gen2-staff-portal-ui` repo with a generated env file on your extension's UI port.
+
+`make extension-run` starts the same native stack as NSR/Farmer: staff API, **Celery beat producers**, **Celery worker**, IAM, AWE, and UI. Generated env files live under `generated/<NAME>/`:
+
+- `celery-beat.env` — beat DB connection and `REGISTRY_CELERY_BEAT_WORKER_QUEUE`
+- `celery-workers.env` — worker queue, MinIO, ID Generator URL (`http://localhost:8040/v1`)
 
 Login: `staff` / `staff` (after Keycloak init — re-run `make infra-up` if you added the extension after infra was first started).
 
@@ -116,6 +123,8 @@ helm install disability-registry . \
 
 Customize `values.yaml` for image tags, DB seed sample data, and ID generator `idTypes`.
 
+For local dev, add an `id_types` entry to `config/id-generator/default.yaml` in **openg2p-developer** when your register mnemonic needs functional IDs (key = lowercase mnemonic, e.g. `disability: { id_length: 12 }`). Restart the container after edits: `docker compose ... restart id-generator`.
+
 ## Develop the extension
 
 1. Copy `meta_data/` from `farmer-extension` or `nsr-extension` as a starting point.
@@ -127,17 +136,20 @@ Optional sample registrant SQL: add `sample_data/` and run `LOAD_SAMPLE_DATA=tru
 
 ## Makefile reference
 
-| Target | Purpose |
-|--------|---------|
+
+| Target                            | Purpose                                           |
+| --------------------------------- | ------------------------------------------------- |
 | `make extension-package NAME=...` | Scaffold product repo + extension + docker + helm |
-| `make extension-setup NAME=...` | Full one-time bootstrap (like `nsr-setup`) |
-| `make extension-run NAME=...` | Start AWE, IAM, API, Celery, UI |
-| `make extension-migrate NAME=...` | Schema only |
-| `make extension-seed NAME=...` | Configuration SQL (+ optional sample data) |
-| `make extension-init NAME=...` | migrate + seed |
+| `make extension-setup NAME=...`   | Full one-time bootstrap (like `nsr-setup`)        |
+| `make extension-run NAME=...`     | Start AWE, IAM, API, Celery worker + beat, UI     |
+| `make extension-migrate NAME=...` | Schema only                                       |
+| `make extension-seed NAME=...`    | Configuration SQL (+ optional sample data)        |
+| `make extension-init NAME=...`    | migrate + seed                                    |
+
 
 ## References
 
 - [Registry Gen2 platform](https://github.com/OpenG2P/registry-platform)
 - [Farmer Registry extension](https://github.com/OpenG2P/farmer-registry)
 - [National Social Registry extension](https://github.com/OpenG2P/national-social-registry)
+

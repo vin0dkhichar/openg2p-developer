@@ -26,20 +26,42 @@ fi
 
 cd "$PROJECT_DIR"
 
+PYTHON_BIN="${OPENG2P_PYTHON:-python3}"
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  echo "Python not found: ${PYTHON_BIN} (set OPENG2P_PYTHON in .env)" >&2
+  exit 1
+fi
+
 if [[ ! -d "$VENV_NAME" ]]; then
-  python3 -m venv "$VENV_NAME"
+  "${PYTHON_BIN}" -m venv "$VENV_NAME"
 fi
 
 # shellcheck disable=SC1091
 source "${VENV_NAME}/bin/activate"
 pip install --upgrade pip wheel
 
+install_requirements() {
+  local req_file="$1"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%%#*}"
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [[ -z "$line" ]] && continue
+    if [[ "$line" == psycopg2-binary* ]]; then
+      # Product repos may pin 2.9.9; cp314 needs >=2.9.12 (prebuilt wheel).
+      pip install 'psycopg2-binary>=2.9.12'
+    else
+      pip install "$line"
+    fi
+  done < "$req_file"
+}
+
 if [[ -f test-requirements.txt ]]; then
-  pip install -r test-requirements.txt
+  install_requirements test-requirements.txt
 fi
 
 if [[ -f requirements.txt ]]; then
-  pip install -r requirements.txt
+  install_requirements requirements.txt
 fi
 
 if [[ -f pyproject.toml ]]; then

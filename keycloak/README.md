@@ -78,6 +78,8 @@ make generate   # sets IAM_URL=http://localhost:8020 in staff portal UI env
 
 Then run a registry stack (`make nsr-registry-run`), open the UI, and sign in as `staff` / `staff`.
 
+Local dev uses variant Keycloak client IDs (`nsr-registry-staff-portal`, `farmer-registry-staff-portal`) that must match `APPLICATION_MNEMONIC` in the staff portal UI. The IAM package seeds `registry-staff-portal` (Helm naming). `make iam-init` runs `scripts/iam-ensure-registry-variant-applications.sh` to clone that application and its roles into the variant mnemonics. If you initialized IAM before this script existed, re-run `make iam-init` and sign out/in to refresh permissions.
+
 ## Reset Keycloak state
 
 If realm/clients are stale, reset Docker volumes:

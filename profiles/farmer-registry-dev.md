@@ -34,20 +34,39 @@ make farmer-registry-init
 
 ## URLs
 
-- Staff API: http://localhost:8001/docs
-- Staff UI: http://localhost:3000
+- Staff API: [http://localhost:8001/docs](http://localhost:8001/docs)
+- Staff UI: [http://localhost:3000](http://localhost:3000)
+- ID Generator: [http://localhost:8040/v1/idgenerator/health](http://localhost:8040/v1/idgenerator/health) (Docker, from `make infra-up`)
+
+## Native stack (`make farmer-registry-run`)
+
+Starts these processes (after `make farmer-setup`):
+
+
+| Process               | Env file                                         |
+| --------------------- | ------------------------------------------------ |
+| AWE API               | `generated/awe/awe-api.env`                      |
+| Farmer staff API      | `generated/farmer-registry/staff-portal-api.env` |
+| Celery worker         | `generated/farmer-registry/celery-workers.env`   |
+| Celery beat producers | `generated/farmer-registry/celery-beat.env`      |
+| IAM staff API         | `generated/iam/staff-portal-api.env`             |
+| Staff UI              | `generated/farmer-registry/staff-portal-ui.env`  |
+
+
+Beat producers poll async work queues and dispatch tasks to Redis queue `farmer_registry_worker_queue`; the worker consumes that queue. Re-run `make generate` and `make install-registry-extension VARIANT=farmer-registry` after pulling orchestration changes.
 
 ## Databases
 
 - `farmer_registry_db` — registry data (schema + configuration seed)
 - `farmer_master_data_db` — master data
+- `idgenerator` — functional ID pools (ID Generator Docker service on `:8040`)
 
 ## What `make farmer-setup` does
 
 One command after `make setup` (starts infra automatically):
 
 1. Installs and initialises IAM and AWE
-2. Installs the Farmer Registry extension and staff portal UI dependencies
+2. Installs the Farmer Registry extension, **Celery worker + beat**, and staff portal UI dependencies
 3. Installs db-seed Python tools (for optional sample data / MinIO uploads)
 4. Migrates schema into `farmer_registry_db`
 5. Applies extension `meta_data/*.sql` — register definitions, schemas, tabs, themes, branding
@@ -82,13 +101,15 @@ Each variant uses its own generated UI env file and port, even when the UI repo 
 
 ## Repos involved
 
-| Repo | Purpose |
-|------|---------|
-| `registry-platform` | Shared Gen2 APIs and Celery |
-| `farmer-registry` | Domain extension + db-seed Docker spec |
-| `openg2p-registry-gen2-staff-portal-ui` | Staff portal frontend |
-| `openg2p-iam-service` | IAM staff portal API |
-| `awe` | Approval Workflow Engine |
+
+| Repo                                    | Purpose                                                |
+| --------------------------------------- | ------------------------------------------------------ |
+| `registry-platform`                     | Shared Gen2 APIs, Celery worker, Celery beat producers |
+| `farmer-registry`                       | Domain extension + db-seed Docker spec                 |
+| `openg2p-registry-gen2-staff-portal-ui` | Staff portal frontend                                  |
+| `openg2p-iam-service`                   | IAM staff portal API                                   |
+| `awe`                                   | Approval Workflow Engine                               |
+
 
 ## Optional container mode
 
@@ -100,5 +121,6 @@ Uses images such as `openg2p/openg2p-farmer-registry-staff-portal-api:develop`.
 
 ## References
 
-- https://github.com/OpenG2P/farmer-registry
-- https://docs.openg2p.org/products/registry
+- [https://github.com/OpenG2P/farmer-registry](https://github.com/OpenG2P/farmer-registry)
+- [https://docs.openg2p.org/products/registry](https://docs.openg2p.org/products/registry)
+

@@ -4,23 +4,15 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/scripts/lib/workspace-path.sh"
+
 if [[ -f .env ]]; then
   # shellcheck disable=SC1091
   source .env
 fi
 
-resolve_path() {
-  local path="$1"
-  if [[ "$path" != /* ]]; then
-    path="${ROOT_DIR}/${path}"
-  fi
-  local dir part
-  dir="$(dirname "$path")"
-  part="$(basename "$path")"
-  echo "$(cd "$dir" && pwd)/${part}"
-}
-
-OPENG2P_WORKSPACE="$(resolve_path "${OPENG2P_WORKSPACE:-../openg2p-workspace}")"
+OPENG2P_WORKSPACE="$(workspace_open)"
 ODOO_PATH="${ODOO_PATH:-${OPENG2P_WORKSPACE}/odoo17}"
 GENERATED_DIR="${ROOT_DIR}/generated"
 
@@ -47,6 +39,8 @@ AWE_UI_PORT="${AWE_UI_PORT:-8031}"
 KEYCLOAK_AWE_RESOLVER_CLIENT_SECRET="${KEYCLOAK_AWE_RESOLVER_CLIENT_SECRET:-dev-awe-resolver-secret}"
 AWE_REGISTRY_CALLBACK_SECRET_ID="${AWE_REGISTRY_CALLBACK_SECRET_ID:-00000000-0000-4000-8000-000000000001}"
 AWE_REGISTRY_CALLBACK_HMAC_SECRET="${AWE_REGISTRY_CALLBACK_HMAC_SECRET:-dev-registry-awe-callback-secret}"
+ID_GENERATOR_PORT="${ID_GENERATOR_PORT:-8040}"
+ID_GENERATOR_URL="http://localhost:${ID_GENERATOR_PORT}/v1"
 G2P_BRIDGE_API_PORT="${G2P_BRIDGE_API_PORT:-8002}"
 G2P_BRIDGE_EXAMPLE_BANK_PORT="${G2P_BRIDGE_EXAMPLE_BANK_PORT:-8003}"
 SPAR_MAPPER_API_PORT="${SPAR_MAPPER_API_PORT:-8004}"
@@ -115,6 +109,7 @@ render_registry_variant() {
     "{{AWE_API_PORT}}" "${AWE_API_PORT}"
     "{{AWE_REGISTRY_CALLBACK_SECRET_ID}}" "${AWE_REGISTRY_CALLBACK_SECRET_ID}"
     "{{AWE_REGISTRY_CALLBACK_HMAC_SECRET}}" "${AWE_REGISTRY_CALLBACK_HMAC_SECRET}"
+    "{{ID_GENERATOR_URL}}" "${ID_GENERATOR_URL}"
   )
 
   render "${ROOT_DIR}/templates/registry-staff-portal-api.env.tpl" \
@@ -123,6 +118,10 @@ render_registry_variant() {
 
   render "${ROOT_DIR}/templates/registry-celery-workers.env.tpl" \
     "${GENERATED_DIR}/${variant_dir}/celery-workers.env" \
+    "${common[@]}"
+
+  render "${ROOT_DIR}/templates/registry-celery-beat.env.tpl" \
+    "${GENERATED_DIR}/${variant_dir}/celery-beat.env" \
     "${common[@]}"
 
   render "${ROOT_DIR}/templates/registry-staff-portal-ui.env.tpl" \

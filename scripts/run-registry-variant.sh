@@ -11,6 +11,7 @@ registry_variant_validate "$VARIANT"
 registry_variant_paths "$VARIANT"
 
 "${ROOT_DIR}/scripts/infra-wait.sh"
+"${ROOT_DIR}/scripts/id-generator-wait.sh"
 "${ROOT_DIR}/scripts/generate-config.sh" >/dev/null
 
 if [[ ! -d "$API_DIR" ]]; then
@@ -78,7 +79,15 @@ run_service "${VARIANT}-staff-api" "$API_DIR" "${GENERATED_DIR}/staff-portal-api
   python -m openg2p_registry_staff_portal_api.main run
 
 run_service "${VARIANT}-celery-worker" "$CELERY_DIR" "${GENERATED_DIR}/celery-workers.env" \
-  celery -A main worker -l info
+  bash -c 'exec celery -A main:celery_app worker -Q "${REGISTRY_CELERY_WORKERS_WORKER_QUEUE}" -l info'
+
+CELERY_BEAT_DIR="${REGISTRY_ROOT}/celery/openg2p-registry-celery-beat-producers"
+if [[ -d "${CELERY_BEAT_DIR}/venv" && -f "${GENERATED_DIR}/celery-beat.env" ]]; then
+  run_service "${VARIANT}-celery-beat" "$CELERY_BEAT_DIR" "${GENERATED_DIR}/celery-beat.env" \
+    bash -c 'exec celery -A main:celery_app worker --beat -l info --schedule "/tmp/celery-beat-${REGISTRY_CELERY_BEAT_DB_DBNAME}.db"'
+else
+  echo "Celery beat not ready. Run: make install-registry-extension VARIANT=${VARIANT} && make generate" >&2
+fi
 
 IAM_API_DIR="${OPENG2P_WORKSPACE}/openg2p-iam-service/iam-staff-portal-api"
 IAM_ENV="${ROOT_DIR}/generated/iam/staff-portal-api.env"

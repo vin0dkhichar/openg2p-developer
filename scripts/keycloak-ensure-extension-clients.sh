@@ -3,8 +3,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="${SCRIPT_DIR}/lib"
+if [[ ! -f "${LIB_DIR}/extension-manifest.sh" && -f /scripts/lib/extension-manifest.sh ]]; then
+  LIB_DIR=/scripts/lib
+fi
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/extension-manifest.sh"
+source "${LIB_DIR}/extension-manifest.sh"
 
 KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:8080}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-staff}"

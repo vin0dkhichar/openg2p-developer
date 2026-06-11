@@ -69,6 +69,11 @@ bash "${ROOT_DIR}/scripts/postgres-ensure-extension-databases.sh" "$VARIANT" || 
   exit 1
 }
 
+bash "${ROOT_DIR}/scripts/id-generator-wait.sh" || {
+  echo "[registry-setup] ID Generator not ready. Run: make infra-up" >&2
+  exit 1
+}
+
 echo
 echo "[registry-setup] Migrating schema and seeding ${LABEL} configuration ..."
 VARIANT="$VARIANT" bash "${ROOT_DIR}/scripts/migrate-registry-db.sh"
