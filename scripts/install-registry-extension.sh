@@ -50,7 +50,7 @@ install_into_venv "$CELERY_DIR"
   cd "$CELERY_BEAT_DIR"
   # shellcheck disable=SC1091
   source venv/bin/activate
-  pip install "$CORE_DIR" "$EXTENSION_DIR" greenlet openg2p-fastapi-auth
+  pip install "$CORE_DIR" "$IAM_CORE_DIR" "$EXTENSION_DIR" greenlet openg2p-fastapi-auth
 )
 
 echo "Installed registry core, IAM core, and ${VARIANT} extension into API, Celery worker, and Celery beat venvs."

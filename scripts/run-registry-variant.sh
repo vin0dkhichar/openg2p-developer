@@ -79,12 +79,12 @@ run_service "${VARIANT}-staff-api" "$API_DIR" "${GENERATED_DIR}/staff-portal-api
   python -m openg2p_registry_staff_portal_api.main run
 
 run_service "${VARIANT}-celery-worker" "$CELERY_DIR" "${GENERATED_DIR}/celery-workers.env" \
-  bash -c 'exec celery -A main worker -Q "${REGISTRY_CELERY_WORKERS_WORKER_QUEUE}" -l info'
+  bash -c 'exec celery -A main:celery_app worker -Q "${REGISTRY_CELERY_WORKERS_WORKER_QUEUE}" -l info'
 
 CELERY_BEAT_DIR="${REGISTRY_ROOT}/celery/openg2p-registry-celery-beat-producers"
 if [[ -d "${CELERY_BEAT_DIR}/venv" && -f "${GENERATED_DIR}/celery-beat.env" ]]; then
   run_service "${VARIANT}-celery-beat" "$CELERY_BEAT_DIR" "${GENERATED_DIR}/celery-beat.env" \
-    bash -c 'exec celery -A main worker --beat -l info --schedule "/tmp/celery-beat-${REGISTRY_CELERY_BEAT_DB_DBNAME}.db"'
+    bash -c 'exec celery -A main:celery_app worker --beat -l info --schedule "/tmp/celery-beat-${REGISTRY_CELERY_BEAT_DB_DBNAME}.db"'
 else
   echo "Celery beat not ready. Run: make install-registry-extension VARIANT=${VARIANT} && make generate" >&2
 fi
