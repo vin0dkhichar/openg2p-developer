@@ -55,7 +55,7 @@ install-iam: ## Install IAM staff portal API Python dependencies
 install-awe: ## Install Approval Workflow Engine (AWE) Python dependencies
 	@bash scripts/install-awe.sh
 
-iam-init: generate ## Migrate IAM schema and seed login providers
+iam-init: generate ## Migrate IAM schema, seed login providers, and sync variant registry applications
 	@bash scripts/init-iam.sh
 
 awe-init: generate ## Initialise AWE schema and registry webhook callback secret

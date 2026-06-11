@@ -70,4 +70,6 @@ echo "============================================="
   python -m iam_staff_portal_api.main migrate
 )
 
+"${ROOT_DIR}/scripts/iam-ensure-registry-variant-applications.sh"
+
 echo "IAM staff portal API initialized."
