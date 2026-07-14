@@ -11,7 +11,7 @@ cp .env.example .env
 make setup
 make infra-up
 
-cd ../openg2p-workspace/openg2p-spar/core/mapper-partner-api
+cd ../openg2p-workspace/spar/core/mapper-partner-api
 virtualenv venv --python=python3
 source venv/bin/activate
 pip install -r ../test-requirements.txt
@@ -39,4 +39,4 @@ Repeat dependency install/migrate for `core/bene-portal-api` if needed.
 
 ## Optional container mode
 
-SPAR containers are not enabled by default. Use native mode above, or add Docker builds from `openg2p-spar/docker/` after cloning.
+SPAR containers are not enabled by default. Use native mode above, or add Docker builds from `spar/docker/` after cloning.

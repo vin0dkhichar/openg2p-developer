@@ -103,4 +103,7 @@ if [[ "$LOAD_SAMPLE_DATA" != "true" ]]; then
   else
     echo "  LOAD_SAMPLE_DATA=true make ${SEED_TARGET}"
   fi
+  if [[ "$VARIANT" == "farmer-registry" ]]; then
+    echo "  (Geo master data loads automatically when sample data is enabled.)"
+  fi
 fi

@@ -4,10 +4,10 @@
 ./{{EXTENSION_DIR_NAME}}
 
 # Dependencies libs
-git://v1.1.6//https://github.com/openg2p/openg2p-fastapi-common#subdirectory=openg2p-fastapi-common
-git://v1.1.6//https://github.com/openg2p/openg2p-fastapi-common#subdirectory=openg2p-fastapi-auth
+git://v1.1.7//https://github.com/openg2p/openg2p-fastapi-common#subdirectory=openg2p-fastapi-common
+git://v1.1.7//https://github.com/openg2p/openg2p-fastapi-common#subdirectory=openg2p-fastapi-auth
 
 # Core
-git://develop//https://github.com/openg2p/openg2p-iam-service#subdirectory=iam-core
-git://develop//https://github.com/openg2p/openg2p-registry-gen2-core#subdirectory=openg2p-registry-core
-git://develop//https://github.com/openg2p/openg2p-registry-gen2-apis#subdirectory=openg2p-registry-staff-portal-api
+git://develop//https://github.com/openg2p/iam-service#subdirectory=iam-core
+git://develop//https://github.com/openg2p/registry-platform#subdirectory=core/openg2p-registry-core
+git://develop//https://github.com/openg2p/registry-platform#subdirectory=apis/openg2p-registry-staff-portal-api

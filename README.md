@@ -94,12 +94,10 @@ make install-registry-extension VARIANT=disability-registry   # custom extension
 
 Registry Gen2 uses **two native Celery processes** per variant (started by `make farmer-registry-run`, `make nsr-registry-run`, or `make extension-run`):
 
-
-| Process                   | Code path                                                         | Role                                                                                                             |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **Celery beat producers** | `registry-platform/celery/openg2p-registry-celery-beat-producers` | Polls DB work queues (functional IDs, dedup, ingest, scores) and enqueues worker tasks on Redis                  |
+| Process                         | Code path                                                           | Role                                                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Celery beat producers** | `registry-platform/celery/openg2p-registry-celery-beat-producers` | Polls DB work queues (functional IDs, dedup, ingest, scores) and enqueues worker tasks on Redis                      |
 | **Celery worker**         | `registry-platform/celery/openg2p-registry-celery-workers`        | Executes tasks from the variant worker queue (`farmer_registry_worker_queue`, `nsr_registry_worker_queue`, etc.) |
-
 
 Generated env files (after `make generate`):
 
@@ -122,18 +120,15 @@ See [profiles/custom-registry-extension-dev.md](profiles/custom-registry-extensi
 
 ### Shared infrastructure (Docker)
 
-
-| Service      | URL / Port                   | Default credentials     |
-| ------------ | ---------------------------- | ----------------------- |
-| Postgres     | `localhost:5432`             | `postgres` / `postgres` |
-| Redis        | `localhost:6379`             | none                    |
-| MinIO        | API `:9000`, console `:9001` | `admin` / `secret`      |
-| Keycloak     | `http://localhost:8080`      | `admin` / `admin`       |
-| ID Generator | `http://localhost:8040`      | none (registry IDs)     |
-
+| Service      | URL / Port                      | Default credentials         |
+| ------------ | ------------------------------- | --------------------------- |
+| Postgres     | `localhost:5432`              | `postgres` / `postgres` |
+| Redis        | `localhost:6379`              | none                        |
+| MinIO        | API`:9000`, console `:9001` | `admin` / `secret`      |
+| Keycloak     | `http://localhost:8080`       | `admin` / `admin`       |
+| ID Generator | `http://localhost:8040`       | none (registry IDs)         |
 
 ### Application ports (native mode defaults)
-
 
 | Service                            | Port |
 | ---------------------------------- | ---- |
@@ -149,7 +144,6 @@ See [profiles/custom-registry-extension-dev.md](profiles/custom-registry-extensi
 | G2P Bridge example bank            | 8003 |
 | SPAR mapper API                    | 8004 |
 | SPAR bene portal API               | 8005 |
-
 
 Override ports in `.env`, then run `make generate`.
 
@@ -273,19 +267,17 @@ make farmer-registry-run    # or make nsr-registry-run
 
 Staff portal UI login: [http://localhost:3010](http://localhost:3010) (NSR) or [http://localhost:3000](http://localhost:3000) (Farmer) using `staff` / `staff`.
 
-Each variant uses its own database, generated env files, API/UI ports, and extension seed SQL. The staff portal UI repo is shared by default (`openg2p-registry-gen2-staff-portal-ui`), but each variant gets a separate `.env` and port so Farmer Registry and NSR can run together.
+Each variant uses its own database, generated env files, API/UI ports, and extension seed SQL. The staff portal UI lives in `registry-platform/ui/staff-portal-ui` and is shared by default, but each variant gets a separate `.env` and port so Farmer Registry and NSR can run together.
 
 Seed steps:
 
-
-| Step                  | Farmer Registry                                   | National Social Registry                       |
-| --------------------- | ------------------------------------------------- | ---------------------------------------------- |
+| Step                  | Farmer Registry                                     | National Social Registry                         |
+| --------------------- | --------------------------------------------------- | ------------------------------------------------ |
 | One-time bootstrap    | `make farmer-setup`                               | `make nsr-setup`                               |
 | Schema                | `make farmer-registry-migrate`                    | `make nsr-registry-migrate`                    |
 | Configuration SQL     | `make farmer-registry-seed`                       | `make nsr-registry-seed`                       |
 | Sample data           | `LOAD_SAMPLE_DATA=true make farmer-registry-seed` | `LOAD_SAMPLE_DATA=true make nsr-registry-seed` |
 | Migrate + config only | `make farmer-registry-init`                       | `make nsr-registry-init`                       |
-
 
 ### G2P Bridge
 

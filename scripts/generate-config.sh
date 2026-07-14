@@ -216,6 +216,11 @@ render "${ROOT_DIR}/templates/awe-api.env.tpl" "${GENERATED_DIR}/awe/awe-api.env
   "{{AWE_CONFIG_PATH}}" "${AWE_CONFIG_PATH}" \
   "{{KEYCLOAK_AWE_RESOLVER_CLIENT_SECRET}}" "${KEYCLOAK_AWE_RESOLVER_CLIENT_SECRET}"
 
+render "${ROOT_DIR}/templates/awe-admin-ui.config.json.tpl" \
+  "${GENERATED_DIR}/awe/admin-ui.config.json" \
+  "{{KEYCLOAK_URL}}" "${KEYCLOAK_URL}" \
+  "{{KEYCLOAK_REALM}}" "${KEYCLOAK_REALM}"
+
 for tpl in "${ROOT_DIR}"/templates/bridge-*.env.tpl "${ROOT_DIR}"/templates/spar-*.env.tpl; do
   [[ -f "$tpl" ]] || continue
   base="$(basename "$tpl" .tpl)"

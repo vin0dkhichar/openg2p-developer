@@ -20,7 +20,7 @@ classifiers = [
 ]
 
 dependencies = [
-  "openg2p-fastapi-common >=1.1.2",
+  "openg2p-fastapi-common >=1.1.7",
   "openg2p-g2pconnect-common-lib >=1.1.0",
 ]
 

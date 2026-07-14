@@ -37,12 +37,47 @@ if [[ ! -d "${AWE_DIR}/venv" ]]; then
   python3 -m venv "${AWE_DIR}/venv"
 fi
 
-(
-  cd "$AWE_DIR"
-  # shellcheck disable=SC1091
-  source venv/bin/activate
-  pip install --upgrade pip wheel
-  pip install -e .
-)
+install_awe_editable() {
+  local pyproject="${AWE_DIR}/pyproject.toml"
+  local backup=""
+  if [[ -f "$pyproject" ]] && grep -qE '^version[[:space:]]*=[[:space:]]*"develop"[[:space:]]*$' "$pyproject"; then
+    # Upstream AWE uses version = "develop" (not PEP 440). Patch temporarily for pip install -e .
+    backup="${pyproject}.openg2p-dev.bak"
+    cp "$pyproject" "$backup"
+    sed -i 's/^version = "develop"/version = "0.0.0.dev0"/' "$pyproject"
+  fi
+
+  (
+    cd "$AWE_DIR"
+    # shellcheck disable=SC1091
+    source venv/bin/activate
+    pip install --upgrade pip wheel
+    pip install -e .
+  )
+
+  if [[ -n "$backup" && -f "$backup" ]]; then
+    mv -f "$backup" "$pyproject"
+  fi
+}
+
+install_awe_editable
+
+if [[ -d "${AWE_DIR}/ui" ]] && command -v npm >/dev/null 2>&1; then
+  echo "Installing AWE admin UI dependencies ..."
+  (
+    cd "${AWE_DIR}/ui"
+    if [[ -f package-lock.json ]]; then
+      npm ci
+    else
+      npm install
+    fi
+  )
+  bash "${ROOT_DIR}/scripts/generate-config.sh" >/dev/null
+  AWE_API_PORT="${AWE_API_PORT:-8030}" AWE_UI_PORT="${AWE_UI_PORT:-8031}" \
+    bash "${ROOT_DIR}/scripts/lib/ensure-awe-ui-vite-config.sh" "${AWE_DIR}/ui"
+  bash "${ROOT_DIR}/scripts/lib/ensure-awe-ui-config.sh" "${AWE_DIR}/ui"
+else
+  echo "Skipping AWE admin UI install (ui/ missing or npm not on PATH)."
+fi
 
 echo "Installed Approval Workflow Engine (AWE) in ${AWE_DIR}/venv"

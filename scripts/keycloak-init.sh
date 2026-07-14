@@ -20,6 +20,17 @@ AWE_UI_PORT="${AWE_UI_PORT:-8031}"
 KEYCLOAK_DEV_USER="${KEYCLOAK_DEV_USER:-staff}"
 KEYCLOAK_DEV_PASSWORD="${KEYCLOAK_DEV_PASSWORD:-staff}"
 
+if [[ -f /scripts/lib/keycloak-registry-roles.sh ]]; then
+  # shellcheck disable=SC1091
+  source /scripts/lib/keycloak-registry-roles.sh
+elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/lib/keycloak-registry-roles.sh" ]]; then
+  # shellcheck disable=SC1091
+  source "$(dirname "${BASH_SOURCE[0]}")/lib/keycloak-registry-roles.sh"
+else
+  echo "[keycloak-init] Missing keycloak-registry-roles.sh" >&2
+  exit 1
+fi
+
 KCADM="${KCADM:-/opt/keycloak/bin/kcadm.sh}"
 
 wait_for_keycloak() {
@@ -155,10 +166,7 @@ ensure_dev_user() {
     --new-password "${KEYCLOAK_DEV_PASSWORD}" \
     --temporary=false
 
-  for role in \
-    "Operations Administrator" \
-    "Technical Administrator" \
-    "Data Supervisor"; do
+  for role in "${REGISTRY_STAFF_CLIENT_ROLES[@]}"; do
     assign_client_role "${KEYCLOAK_DEV_USER}" "nsr-registry-staff-portal" "${role}"
     assign_client_role "${KEYCLOAK_DEV_USER}" "farmer-registry-staff-portal" "${role}"
   done
@@ -263,12 +271,7 @@ ensure_client "openg2p-pbms-local" \
 
 ensure_awe_clients
 
-for role in \
-  "Operations Administrator" \
-  "Technical Administrator" \
-  "Data Supervisor" \
-  "Intake Officer" \
-  "Data Editor"; do
+for role in "${REGISTRY_STAFF_CLIENT_ROLES[@]}"; do
   ensure_client_role "nsr-registry-staff-portal" "${role}"
   ensure_client_role "farmer-registry-staff-portal" "${role}"
 done

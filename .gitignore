@@ -10,6 +10,7 @@ repos/
 # Python
 venv/
 .venv/
+.venv-psycopg2/
 __pycache__/
 *.pyc
 

@@ -20,4 +20,12 @@ if [[ ! -f "${DB_SEED_DIR}/requirements.txt" ]]; then
 fi
 
 bash "${ROOT_DIR}/scripts/install-python-project.sh" "$DB_SEED_DIR"
+
+(
+  # shellcheck disable=SC1091
+  source "${DB_SEED_DIR}/venv/bin/activate"
+  # Product Docker images install psycopg2 via apk; local dev needs a wheel.
+  pip install 'psycopg2-binary>=2.9.12'
+)
+
 echo "db-seed Python environment ready for ${LABEL}."

@@ -171,9 +171,13 @@ your-workspace/
 ├── openg2p-developer/          ← this orchestration repo
 └── openg2p-workspace/          ← cloned product repos (default)
     ├── registry-platform/
+    │   └── ui/staff-portal-ui/
+    ├── iam-service/
+    ├── farmer-registry/
     ├── national-social-registry/
-    ├── openg2p-iam-service/
-    ├── openg2p-registry-gen2-staff-portal-ui/
+    ├── g2p-bridge/
+    ├── spar/
+    ├── awe/
     └── ...
 ```
 
@@ -329,7 +333,7 @@ done
 
 ### National Social Registry (NSR)
 
-- Repos: `registry-platform`, `national-social-registry`, `openg2p-iam-service`, `openg2p-registry-gen2-staff-portal-ui`, **`awe`**
+- Repos: `registry-platform` (includes `ui/staff-portal-ui`), `national-social-registry`, `iam-service`, **`awe`**
 - Databases created on first infra start: `nsr_registry_db`, `nsr_master_data_db`, `iam_staff`, `awe`, `idgenerator`
 - ID Generator (Docker): `http://localhost:8040` — required for functional ID assignment on registers with `functional_id_generation_required=true` (NSR Individual/Household)
 - Celery: `make nsr-registry-run` starts **beat producers** + **worker** (native). Env: `generated/national-social-registry/celery-beat.env` and `celery-workers.env`; queue `nsr_registry_worker_queue`
@@ -350,7 +354,7 @@ See [profiles/custom-registry-extension-dev.md](../profiles/custom-registry-exte
 
 ### Farmer Registry
 
-- Repos: `registry-platform`, `farmer-registry`, `openg2p-iam-service`, `openg2p-registry-gen2-staff-portal-ui`, **`awe`**
+- Repos: `registry-platform` (includes `ui/staff-portal-ui`), `farmer-registry`, `iam-service`, **`awe`**
 - Databases created on first infra start: `farmer_registry_db`, `farmer_master_data_db`, `iam_staff`, `awe`, `idgenerator`
 - ID Generator (Docker): `http://localhost:8040` — wired into Celery workers when functional IDs are enabled on a register
 - Celery: `make farmer-registry-run` starts **beat producers** + **worker** (native). Env: `generated/farmer-registry/celery-beat.env` and `celery-workers.env`; queue `farmer_registry_worker_queue`

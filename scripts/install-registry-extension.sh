@@ -13,7 +13,7 @@ registry_variant_paths "$VARIANT"
 
 REGISTRY_ROOT="${OPENG2P_WORKSPACE}/registry-platform"
 CORE_DIR="${REGISTRY_ROOT}/core/openg2p-registry-core"
-IAM_CORE_DIR="${OPENG2P_WORKSPACE}/openg2p-iam-service/iam-core"
+IAM_CORE_DIR="${OPENG2P_WORKSPACE}/iam-service/iam-core"
 API_DIR="${REGISTRY_ROOT}/apis/openg2p-registry-staff-portal-api"
 CELERY_DIR="${REGISTRY_ROOT}/celery/openg2p-registry-celery-workers"
 CELERY_BEAT_DIR="${REGISTRY_ROOT}/celery/openg2p-registry-celery-beat-producers"

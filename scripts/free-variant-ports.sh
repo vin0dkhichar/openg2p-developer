@@ -17,16 +17,45 @@ fi
 
 IAM_STAFF_PORT="${IAM_STAFF_PORT:-8020}"
 AWE_API_PORT="${AWE_API_PORT:-8030}"
+AWE_UI_PORT="${AWE_UI_PORT:-8031}"
 
 free_port() {
   local port="$1"
   local label="$2"
-  local pids
-  pids="$(lsof -ti "tcp:${port}" 2>/dev/null || true)"
+  local pids=""
+
+  if command -v lsof >/dev/null 2>&1; then
+    pids="$(lsof -tiTCP:"${port}" -sTCP:LISTEN 2>/dev/null || true)"
+  fi
+  if [[ -z "$pids" ]] && command -v fuser >/dev/null 2>&1; then
+    pids="$(fuser -n tcp "${port}" 2>/dev/null | tr -cs '0-9' '\n' | sed '/^$/d' || true)"
+  fi
   if [[ -z "$pids" ]]; then
     return 0
   fi
   echo "Stopping ${label} (port ${port}) ..."
+  # shellcheck disable=SC2086
+  kill $pids 2>/dev/null || true
+  sleep 1
+  pids=""
+  if command -v lsof >/dev/null 2>&1; then
+    pids="$(lsof -tiTCP:"${port}" -sTCP:LISTEN 2>/dev/null || true)"
+  fi
+  if [[ -n "$pids" ]]; then
+    # shellcheck disable=SC2086
+    kill -9 $pids 2>/dev/null || true
+  fi
+}
+
+stop_matching_processes() {
+  local label="$1"
+  local pattern="$2"
+  local pids
+  pids="$(pgrep -f "$pattern" 2>/dev/null || true)"
+  if [[ -z "$pids" ]]; then
+    return 0
+  fi
+  echo "Stopping ${label} ..."
   # shellcheck disable=SC2086
   kill $pids 2>/dev/null || true
   sleep 1
@@ -43,5 +72,37 @@ free_port "${REGISTRY_STAFF_PORTAL_API_APP_PORT}" "${VARIANT} staff API"
 free_port "${PORT}" "${VARIANT} staff UI"
 free_port "${IAM_STAFF_PORT}" "IAM staff API"
 free_port "${AWE_API_PORT}" "AWE API"
+free_port "${AWE_UI_PORT}" "AWE admin UI"
+
+# Next.js can keep running after the shell job exits; stop by path as well.
+stop_matching_processes "${VARIANT} staff UI (next dev)" "${UI_DIR}/node_modules/.bin/next dev"
+stop_matching_processes "${VARIANT} staff UI (next dev)" "next dev --webpack"
+
+stop_matching_processes "AWE admin UI (vite)" "${OPENG2P_WORKSPACE}/awe/ui/node_modules/.bin/vite"
+stop_matching_processes "AWE admin UI (vite)" ".openg2p-vite.config.mjs"
+
+# Celery workers/beat do not bind HTTP ports; stop them explicitly so DB
+# connections from a prior run are released before restart.
+stop_matching_processes "${VARIANT} Celery beat" "${REGISTRY_ROOT}/celery/openg2p-registry-celery-beat-producers"
+stop_matching_processes "${VARIANT} Celery worker" "${REGISTRY_ROOT}/celery/openg2p-registry-celery-workers"
+
+# Celery beat persists its schedule under /tmp. A stale file from an older
+# registry-platform version can reference removed tasks (e.g.
+# intake_form_change_request_beat_producer) and spam errors in a tight loop.
+case "$VARIANT" in
+  farmer-registry) BEAT_DB_NAME="${FARMER_REGISTRY_DB:-farmer_registry_db}" ;;
+  national-social-registry) BEAT_DB_NAME="${NSR_REGISTRY_DB:-nsr_registry_db}" ;;
+  *)
+    # shellcheck disable=SC1091
+    source "${ROOT_DIR}/scripts/lib/extension-manifest.sh"
+    extension_manifest_load "$VARIANT"
+    BEAT_DB_NAME="${EXTENSION_REGISTRY_DB}"
+    ;;
+esac
+BEAT_SCHEDULE="/tmp/celery-beat-${BEAT_DB_NAME}.db"
+if [[ -f "$BEAT_SCHEDULE" ]]; then
+  echo "Removing stale Celery beat schedule ${BEAT_SCHEDULE} ..."
+  rm -f "$BEAT_SCHEDULE"
+fi
 
 echo "Ports cleared for ${LABEL}."

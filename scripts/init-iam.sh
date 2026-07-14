@@ -21,7 +21,7 @@ resolve_path() {
 }
 
 OPENG2P_WORKSPACE="$(resolve_path "${OPENG2P_WORKSPACE:-../openg2p-workspace}")"
-IAM_API_DIR="${OPENG2P_WORKSPACE}/openg2p-iam-service/iam-staff-portal-api"
+IAM_API_DIR="${OPENG2P_WORKSPACE}/iam-service/iam-staff-portal-api"
 GENERATED_DIR="${ROOT_DIR}/generated/iam"
 ENV_FILE="${GENERATED_DIR}/staff-portal-api.env"
 

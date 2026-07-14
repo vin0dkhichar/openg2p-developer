@@ -40,10 +40,10 @@ repos:
     ref: develop
     path: registry-platform
 
-  registry_gen2_staff_portal_ui:
-    url: https://github.com/OpenG2P/openg2p-registry-gen2-staff-portal-ui.git
-    ref: develop
-    path: openg2p-registry-gen2-staff-portal-ui
+  iam_service:
+    url: https://github.com/OpenG2P/iam-service.git
+    ref: "develop"
+    path: iam-service
 
   openg2p_data:
     url: https://github.com/OpenG2P/openg2p-data.git
@@ -68,9 +68,9 @@ repos:
     path: g2p-bridge
 
   spar:
-    url: https://github.com/OpenG2P/openg2p-spar.git
+    url: https://github.com/OpenG2P/spar.git
     ref: develop
-    path: openg2p-spar
+    path: spar
 
   awe:
     url: https://github.com/OpenG2P/awe.git
