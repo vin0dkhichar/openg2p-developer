@@ -30,16 +30,28 @@ clone_repo() {
   local url="$2"
   local ref="$3"
   local path="$4"
+  local depth="${5:-}"
 
   local target="${OPENG2P_WORKSPACE}/${path}"
   if [[ -d "${target}/.git" ]]; then
     echo "==> Updating ${name} (${target})"
-    git -C "$target" fetch --tags --prune origin
+    if [[ -n "$depth" ]]; then
+      git -C "$target" fetch --depth "$depth" origin "$ref" 2>/dev/null \
+        || git -C "$target" fetch --tags --prune origin
+    else
+      git -C "$target" fetch --tags --prune origin
+    fi
     git -C "$target" checkout "$ref" 2>/dev/null || git -C "$target" checkout -B "$ref" "origin/${ref}"
     git -C "$target" pull --ff-only origin "$ref" 2>/dev/null || true
   else
     echo "==> Cloning ${name} -> ${target}"
     mkdir -p "$(dirname "$target")"
+    if [[ -n "$depth" ]]; then
+      if git clone --depth "$depth" --single-branch --branch "$ref" "$url" "$target"; then
+        return 0
+      fi
+      echo "    Shallow clone failed; retrying full single-branch clone ..." >&2
+    fi
     git clone --branch "$ref" --single-branch "$url" "$target" 2>/dev/null || {
       git clone "$url" "$target"
       git -C "$target" checkout "$ref"
@@ -51,19 +63,10 @@ clone_repo_key() {
   local key="$1"
   case "$key" in
     odoo)
-      clone_repo "Odoo 17" "https://github.com/odoo/odoo.git" "$ODOO_REF" "odoo17"
+      clone_repo "Odoo 17" "https://github.com/odoo/odoo.git" "$ODOO_REF" "odoo17" "1"
       ;;
     pbms)
-      clone_repo "OpenG2P PBMS Odoo" "https://github.com/OpenG2P/openg2p-pbms-odoo.git" "$PBMS_REF" "openg2p-pbms-odoo"
-      ;;
-    pbms_community_addons)
-      clone_repo "OpenG2P PBMS Community Addons" "https://github.com/OpenG2P/openg2p-pbms-community-addons.git" "17.0-develop" "openg2p-pbms-community-addons"
-      ;;
-    pbms_extensions)
-      clone_repo "OpenG2P PBMS Extensions" "https://github.com/OpenG2P/openg2p-pbms-odoo-extensions.git" "$PBMS_REF" "openg2p-pbms-odoo-extensions"
-      ;;
-    openg2p_registry)
-      clone_repo "OpenG2P Registry Odoo" "https://github.com/OpenG2P/openg2p-registry.git" "17.0-develop" "openg2p-registry"
+      clone_repo "OpenG2P PBMS" "https://github.com/OpenG2P/pbms.git" "$PBMS_REF" "pbms"
       ;;
     odoo_commons)
       clone_repo "OpenG2P Odoo Commons" "https://github.com/OpenG2P/openg2p-odoo-commons.git" "$PBMS_REF" "openg2p-odoo-commons"

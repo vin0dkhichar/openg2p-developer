@@ -213,14 +213,34 @@ See `profiles/` for curated stacks:
 
 ## First-time service setup
 
-### PBMS (Odoo)
+### PBMS (full Gen2 stack)
+
+One-time bootstrap (Odoo + bg tasks + Farmer Registry):
 
 ```bash
-make setup
-make install-odoo
-make infra-up
+make pbms-setup
+```
+
+Daily development — starts infra, registry, PBMS staff API, Celery beat/worker, and Odoo:
+
+```bash
 make pbms-run
 ```
+
+Manual steps:
+
+```bash
+make setup PROFILE=pbms
+make install-odoo
+make install-pbms-bg-tasks
+make infra-up
+make farmer-setup
+make pbms-init
+make init-pbms-bg-tasks
+make pbms-run
+```
+
+See `profiles/pbms-dev.md` for ports and configuration.
 
 Default Odoo master password: `admin`
 
@@ -343,7 +363,7 @@ Change `POSTGRES_PORT` in `.env` (e.g. `5433`) and run `make generate`.
 
 **Odoo addons not found**
 
-Ensure `make clone` completed and `OPENG2P_WORKSPACE` in `.env` points to the directory containing `odoo17`, `openg2p-pbms-odoo`, etc.
+Ensure `make clone PROFILE=pbms` completed and `OPENG2P_WORKSPACE` in `.env` points to the directory containing `odoo17`, `pbms`, and `openg2p-odoo-commons`.
 
 **Registry extension not loaded**
 

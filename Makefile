@@ -13,9 +13,9 @@ COMPOSE_PROFILES := --profile infra --profile with-redis --profile pbms --profil
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup clone generate install-odoo install-iam install-awe install-registry-extension install-registry-ui install-registry-db-seed \
+.PHONY: help setup clone generate install-odoo install-iam install-awe install-registry-extension install-registry-ui install-registry-db-seed install-pbms-bg-tasks \
 	infra-up infra-down up down status logs clean \
-	pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
+	pbms-setup pbms-init init-pbms-bg-tasks pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
 	farmer-setup farmer-registry-init farmer-registry-migrate farmer-registry-seed farmer-registry-fix-seed-enums farmer-registry-validate-seed \
 	nsr-setup nsr-registry-init nsr-registry-migrate nsr-registry-seed seed-registry iam-init awe-init \
 	extension-package extension-setup extension-run extension-init extension-migrate extension-seed clone-profiles \
@@ -38,6 +38,9 @@ generate: ## Generate Odoo conf and service env files from templates
 
 install-odoo: ## Install Odoo 17 Python dependencies into a venv
 	@bash scripts/install-odoo-deps.sh
+
+install-pbms-bg-tasks: ## Install PBMS staff portal API and Celery Python dependencies
+	@bash scripts/install-pbms-bg-tasks.sh
 
 install-registry-extension: ## Install domain extension (VARIANT=farmer-registry|national-social-registry)
 	@bash scripts/install-registry-extension.sh $(VARIANT)
@@ -187,7 +190,16 @@ up-spar: infra-up ## Start infra for SPAR native development
 up-full: generate infra-up ## Start infra + all container profiles
 	@$(COMPOSE) $(COMPOSE_FILES) --profile full up -d
 
-pbms-run: generate ## Run PBMS Odoo natively (recommended for development)
+pbms-setup: ## One-time PBMS bootstrap (infra, deps, registry, Odoo + bg-task DBs)
+	@bash scripts/pbms-setup.sh
+
+pbms-init: generate ## Bootstrap pbmsdb with Odoo base modules (first-time only)
+	@bash scripts/init-pbms.sh
+
+init-pbms-bg-tasks: generate ## Migrate bgtaskdb schema for PBMS background tasks
+	@bash scripts/init-pbms-bg-tasks.sh
+
+pbms-run: generate ## Run full PBMS stack (registry, bg tasks, Odoo)
 	@bash scripts/run-pbms.sh
 
 farmer-registry-run: generate ## Run Farmer Registry Gen2 natively

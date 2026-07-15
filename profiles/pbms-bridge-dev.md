@@ -9,7 +9,9 @@ Test disbursement flows from PBMS through G2P Bridge to the example bank simulat
 Terminal 1 — infrastructure:
 
 ```bash
-make setup
+make setup PROFILE=pbms
+make clone PROFILE=bridge
+make generate
 make infra-up
 ```
 
@@ -23,6 +25,7 @@ Terminal 3 — PBMS:
 
 ```bash
 make install-odoo
+make pbms-init
 make pbms-run
 ```
 

@@ -19,7 +19,7 @@ Profiles (use with make clone PROFILE=... or make setup PROFILE=...):
   registry                  Shared Registry Gen2 core + Farmer + NSR + sample data
   national-social-registry  NSR only (platform, IAM, AWE, UI, NSR, sample data)
   farmer-registry           Farmer Registry only (platform, IAM, AWE, UI, farmer)
-  pbms                      Odoo / PBMS stack only
+  pbms                      Odoo / PBMS stack + Farmer Registry (for bg tasks)
   bridge                    G2P Bridge only
   spar                      SPAR only
   infra                     No product repos (infra is Docker-only)
@@ -44,7 +44,7 @@ clone_profile_repo_keys() {
       echo "registry_platform iam_service awe farmer_registry national_social_registry openg2p_data"
       ;;
     pbms)
-      echo "odoo pbms pbms_community_addons pbms_extensions openg2p_registry odoo_commons"
+      echo "odoo pbms odoo_commons registry_platform iam_service awe farmer_registry"
       ;;
     bridge)
       echo "g2p_bridge"
@@ -53,7 +53,7 @@ clone_profile_repo_keys() {
       echo "spar"
       ;;
     full)
-      echo "odoo pbms pbms_community_addons pbms_extensions openg2p_registry odoo_commons registry_platform iam_service openg2p_data farmer_registry national_social_registry g2p_bridge spar awe"
+      echo "odoo pbms odoo_commons registry_platform iam_service openg2p_data farmer_registry national_social_registry g2p_bridge spar awe"
       ;;
     *)
       echo "Unknown PROFILE '${1}'. Valid profiles:" >&2

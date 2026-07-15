@@ -11,24 +11,9 @@ repos:
     path: odoo17
 
   pbms:
-    url: https://github.com/OpenG2P/openg2p-pbms-odoo.git
+    url: https://github.com/OpenG2P/pbms.git
     ref: develop
-    path: openg2p-pbms-odoo
-
-  pbms_community_addons:
-    url: https://github.com/OpenG2P/openg2p-pbms-community-addons.git
-    ref: 17.0-develop
-    path: openg2p-pbms-community-addons
-
-  pbms_extensions:
-    url: https://github.com/OpenG2P/openg2p-pbms-odoo-extensions.git
-    ref: develop
-    path: openg2p-pbms-odoo-extensions
-
-  openg2p_registry:
-    url: https://github.com/OpenG2P/openg2p-registry.git
-    ref: 17.0-develop
-    path: openg2p-registry
+    path: pbms
 
   odoo_commons:
     url: https://github.com/OpenG2P/openg2p-odoo-commons.git
@@ -78,7 +63,7 @@ repos:
     path: awe
 
 images:
-  pbms: openg2p/openg2p-pbms-core:1.2.6
+  pbms: openg2p/openg2p-pbms-core:develop
   farmer_registry_staff_api: openg2p/openg2p-farmer-registry-staff-portal-api:develop
   farmer_registry_celery: openg2p/openg2p-farmer-registry-celery:develop
   farmer_registry_ui: openg2p/openg2p-farmer-registry-staff-portal-ui:develop

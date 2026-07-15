@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 
   redis:
-    profiles: [with-redis, farmer-registry, nsr-registry, bridge, full]
+    profiles: [with-redis, pbms, farmer-registry, nsr-registry, bridge, full]
     image: redis:7-alpine
     container_name: openg2p-redis
     ports:
