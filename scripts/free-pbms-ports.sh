@@ -55,8 +55,13 @@ free_port "${PBMS_HTTP_PORT}" "PBMS Odoo"
 free_port "${PBMS_STAFF_API_PORT}" "PBMS staff portal API"
 free_port "8000" "PBMS staff portal API (legacy default bind port)"
 
+stop_matching_processes "PBMS Celery beat" "openg2p_bg_task_celery_beat_producers.main.celery_app beat"
+stop_matching_processes "PBMS Celery beat worker" "openg2p_bg_task_celery_beat_producers.main.celery_app worker -Q celery"
+stop_matching_processes "PBMS Celery beat" "celery-beat-pbms-bgtaskdb"
 stop_matching_processes "PBMS Celery beat" "${CELERY_BEAT_DIR}"
 stop_matching_processes "PBMS Celery worker" "${CELERY_WORKERS_DIR}"
+stop_matching_processes "PBMS Celery worker" "bg_task_worker_queue"
+stop_matching_processes "PBMS Celery worker" "pbms_celery_worker_app"
 stop_matching_processes "PBMS staff portal API" "openg2p_pbms_staff_portal_api.main"
 
 BEAT_SCHEDULE="/tmp/celery-beat-pbms-${PBMS_BGTASK_DB_NAME}.db"

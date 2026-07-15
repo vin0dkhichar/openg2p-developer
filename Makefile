@@ -15,7 +15,11 @@ COMPOSE_PROFILES := --profile infra --profile with-redis --profile pbms --profil
 
 .PHONY: help setup clone generate install-odoo install-iam install-awe install-registry-extension install-registry-ui install-registry-db-seed install-pbms-bg-tasks install-bridge install-spar \
 	infra-ensure infra-up keycloak-init infra-down up down status logs clean \
-	pbms-setup pbms-full-setup pbms-init init-pbms-bg-tasks init-bridge init-spar seed-spar-farmer-links pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
+	pbms-setup pbms-full-setup pbms-init init-pbms-bg-tasks init-bridge init-spar seed-spar-farmer-links \
+	pbms-run pbms-stop free-native-stack free-spar-ports \
+	start-pbms-bg-tasks start-spar start-bridge \
+	verify-native-stack verify-pbms verify-registry verify-bridge verify-spar retry-bridge-fa \
+	farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
 	farmer-setup farmer-registry-init farmer-registry-migrate farmer-registry-seed farmer-registry-fix-seed-enums farmer-registry-validate-seed \
 	nsr-setup nsr-registry-init nsr-registry-migrate nsr-registry-seed seed-registry iam-init awe-init \
 	extension-package extension-setup extension-run extension-init extension-migrate extension-seed clone-profiles \
@@ -222,8 +226,40 @@ init-spar: generate ## Migrate spardb and seed SPAR strategies
 seed-spar-farmer-links: ## Link farmer registry internal_record_id → bank account in SPAR
 	@bash scripts/seed-spar-farmer-links.sh
 
-pbms-run: ## Run full PBMS stack (registry, bg tasks, Odoo)
+pbms-run: ## Run PBMS + registry + Odoo (does not start SPAR or Bridge)
 	@bash scripts/run-pbms.sh
+
+start-pbms-bg-tasks: generate ## Start PBMS staff API + Celery only
+	@bash scripts/start-pbms-bg-tasks.sh
+
+start-bridge: generate ## Start G2P Bridge only (run start-spar first for FA resolution)
+	@bash scripts/run-bridge.sh
+
+free-spar-ports: ## Stop SPAR processes only (leave PBMS/Bridge running)
+	@bash scripts/free-spar-ports.sh
+
+free-native-stack: ## Stop all native PBMS/registry/bridge/spar processes (clean restart)
+	@bash scripts/free-native-stack.sh
+
+pbms-stop: free-native-stack ## Stop full native stack (Celery, APIs, Odoo) — does not stop Docker infra
+
+verify-native-stack: ## Verify pbms+registry (pass COMPONENTS=spar bridge pbms registry)
+	@bash scripts/verify-native-stack.sh $(COMPONENTS)
+
+verify-pbms: ## Verify PBMS Celery only
+	@bash scripts/verify-native-stack.sh pbms
+
+verify-registry: ## Verify registry Celery only
+	@bash scripts/verify-native-stack.sh registry
+
+verify-bridge: ## Verify Bridge Celery only
+	@bash scripts/verify-native-stack.sh bridge
+
+verify-spar: ## Verify SPAR mapper API only
+	@bash scripts/verify-native-stack.sh spar
+
+retry-bridge-fa: ## Reset FA ERROR batches to PENDING (requires SPAR running)
+	@bash scripts/retry-bridge-fa.sh
 
 farmer-registry-run: generate ## Run Farmer Registry Gen2 natively
 	@bash scripts/run-registry-variant.sh farmer-registry
@@ -231,8 +267,10 @@ farmer-registry-run: generate ## Run Farmer Registry Gen2 natively
 nsr-registry-run: generate ## Run National Social Registry Gen2 natively
 	@bash scripts/run-registry-variant.sh national-social-registry
 
-bridge-run: generate ## Run G2P Bridge services natively
+bridge-run: generate ## Alias for start-bridge
 	@bash scripts/run-bridge.sh
 
-spar-run: generate ## Run SPAR APIs natively
+start-spar: ## Start SPAR (no config regen)
 	@bash scripts/run-spar.sh
+
+spar-run: generate start-spar ## Regenerate config then start SPAR

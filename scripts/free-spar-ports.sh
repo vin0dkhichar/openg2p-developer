@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
-# Stop native processes on Bridge + SPAR ports before restart.
+# Stop native SPAR processes only (does not touch Bridge or PBMS).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck disable=SC1091
-source "${ROOT_DIR}/scripts/lib/bridge.sh"
-# shellcheck disable=SC1091
 source "${ROOT_DIR}/scripts/lib/spar.sh"
 
-bridge_load_env
 spar_load_env
-
-# Bridge Celery/API cleanup (uses path-based pgrep patterns that match native dev).
-bridge_free_ports
 
 free_port() {
   local port="$1"
@@ -48,8 +42,12 @@ stop_matching_processes() {
 
 free_port "${SPAR_MAPPER_API_PORT}" "SPAR mapper API"
 free_port "${SPAR_BENE_API_PORT}" "SPAR bene portal API"
-
+stop_matching_processes "SPAR mapper API" "uvicorn main:app.*--port ${SPAR_MAPPER_API_PORT}"
 stop_matching_processes "SPAR mapper API" "spar/core/mapper-partner-api"
+stop_matching_processes "SPAR bene API" "uvicorn main:app.*--port ${SPAR_BENE_API_PORT}"
 stop_matching_processes "SPAR bene API" "spar/core/bene-portal-api"
 
-echo "Bridge + SPAR ports cleared."
+rm -f "${ROOT_DIR}/generated/run/spar-mapper-api.pid" \
+      "${ROOT_DIR}/generated/run/spar-bene-api.pid" 2>/dev/null || true
+
+echo "SPAR ports cleared."

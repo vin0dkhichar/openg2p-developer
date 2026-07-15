@@ -85,8 +85,49 @@ bridge_example_bank_url() {
   echo "http://localhost:${G2P_BRIDGE_EXAMPLE_BANK_PORT}"
 }
 
+bridge_spar_mapper_url() {
+  echo "http://localhost:${SPAR_MAPPER_API_PORT}"
+}
+
 bridge_spar_mapper_resolve_url() {
-  echo "http://localhost:${SPAR_MAPPER_API_PORT}/mapper/resolve"
+  echo "$(bridge_spar_mapper_url)/mapper/resolve"
+}
+
+bridge_wait_for_spar_mapper() {
+  local url="${1:-$(bridge_spar_mapper_url)}"
+  local attempts="${2:-30}"
+  echo "Waiting for SPAR mapper API at ${url} ..."
+  for ((i = 1; i <= attempts; i++)); do
+    if curl -sf "${url}/docs" >/dev/null 2>&1 || curl -sf "${url}/ping" >/dev/null 2>&1; then
+      echo "SPAR mapper API is ready."
+      return 0
+    fi
+    sleep 1
+  done
+  echo "Timed out waiting for SPAR mapper API at ${url}" >&2
+  echo "Start SPAR first: bash scripts/start-spar.sh   (or: make pbms-run)" >&2
+  return 1
+}
+
+bridge_retry_fa_resolution_errors() {
+  if [[ "${BRIDGE_RETRY_FA_RESOLUTION_ERRORS:-true}" != "true" ]]; then
+    return 0
+  fi
+  if ! bridge_db_migrated; then
+    return 0
+  fi
+  local reset_count
+  reset_count="$(PGPASSWORD="${POSTGRES_PASSWORD}" psql \
+    -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U postgres -d "${BRIDGE_DB_NAME}" \
+    -tc "UPDATE disbursement_batch_control
+         SET fa_resolution_status = 'PENDING',
+             fa_resolution_attempts = 0,
+             fa_resolution_latest_error_code = NULL
+         WHERE fa_resolution_status = 'ERROR'
+         RETURNING id;" 2>/dev/null | grep -c . || true)"
+  if [[ "${reset_count}" -gt 0 ]]; then
+    echo "Reset ${reset_count} FA resolution ERROR batch(es) to PENDING for retry."
+  fi
 }
 
 bridge_db_migrated() {
@@ -143,8 +184,9 @@ bridge_free_ports() {
 
   free_port "${G2P_BRIDGE_API_PORT}" "G2P Bridge partner API"
   free_port "${G2P_BRIDGE_EXAMPLE_BANK_PORT}" "Example bank API"
-  stop_matching_processes "G2P Bridge Celery worker" "celery -A main.celery_app worker -Q g2p_bridge_queue"
-  stop_matching_processes "G2P Bridge Celery beat" "celery -A main.celery_app beat"
+  stop_matching_processes "G2P Bridge Celery worker" "g2p-bridge/core/celery-workers.*g2p_bridge_queue"
+  stop_matching_processes "G2P Bridge Celery beat worker" "g2p-bridge/core/celery-beat-producers.*worker -Q celery"
+  stop_matching_processes "G2P Bridge Celery beat" "g2p-bridge/core/celery-beat-producers.*celery_app beat"
   stop_matching_processes "G2P Bridge Celery beat" "celery-beat-g2p-bridge"
   pkill -f "g2p-bridge/core/partner-api.*main.py run" 2>/dev/null || true
   pkill -f "openg2p-example-bank-api.*main.py run" 2>/dev/null || true

@@ -80,13 +80,33 @@ fi
 run_service "${VARIANT}-staff-api" "$API_DIR" "${GENERATED_DIR}/staff-portal-api.env" \
   python -m openg2p_registry_staff_portal_api.main run
 
+if [[ -f "${GENERATED_DIR}/celery-workers.env" ]]; then
+  # shellcheck disable=SC1090
+  source "${GENERATED_DIR}/celery-workers.env"
+fi
+run_service_stop "${VARIANT}-celery-worker" "openg2p-registry-celery-workers.*${REGISTRY_CELERY_WORKERS_WORKER_QUEUE:-farmer_registry_worker_queue}" "${CELERY_DIR}"
 run_service "${VARIANT}-celery-worker" "$CELERY_DIR" "${GENERATED_DIR}/celery-workers.env" \
   bash -c 'exec celery -A main:celery_app worker -Q "${REGISTRY_CELERY_WORKERS_WORKER_QUEUE}" -l info --concurrency="${REGISTRY_CELERY_CONCURRENCY:-2}"'
+run_service_verify "${VARIANT}-celery-worker"
 
 CELERY_BEAT_DIR="${REGISTRY_ROOT}/celery/openg2p-registry-celery-beat-producers"
 if [[ -x "${CELERY_BEAT_DIR}/venv/bin/python" && -f "${GENERATED_DIR}/celery-beat.env" ]]; then
+  # shellcheck disable=SC1090
+  source "${GENERATED_DIR}/celery-beat.env"
+  REGISTRY_BEAT_TOKEN="${REGISTRY_CELERY_BEAT_DB_DBNAME:-farmer_registry_db}"
+  run_service_stop_celery_beats "${REGISTRY_BEAT_TOKEN}"
+  run_service_stop "${VARIANT}-celery-beat" "openg2p-registry-celery-beat-producers.*celery_app beat" "${CELERY_BEAT_DIR}"
+  run_service_stop "${VARIANT}-celery-beat-worker" "openg2p-registry-celery-beat-producers.*worker -Q celery" "${CELERY_BEAT_DIR}"
+
   run_service "${VARIANT}-celery-beat" "$CELERY_BEAT_DIR" "${GENERATED_DIR}/celery-beat.env" \
-    bash -c 'exec celery -A main:celery_app worker --beat -l info --concurrency="${REGISTRY_CELERY_CONCURRENCY:-2}" --schedule "/tmp/celery-beat-${REGISTRY_CELERY_BEAT_DB_DBNAME}.db"'
+    bash -c 'exec celery -A main:celery_app beat -l info --schedule "/tmp/celery-beat-${REGISTRY_CELERY_BEAT_DB_DBNAME}.db"'
+  run_service_verify "${VARIANT}-celery-beat"
+
+  run_service "${VARIANT}-celery-beat-worker" "$CELERY_BEAT_DIR" "${GENERATED_DIR}/celery-beat.env" \
+    bash -c 'exec celery -A main:celery_app worker -Q celery -l info --concurrency=1'
+  run_service_verify "${VARIANT}-celery-beat-worker"
+
+  run_service_assert_single "${VARIANT} Celery beat" "openg2p-registry-celery-beat-producers.*celery_app beat" 1
 fi
 
 IAM_API_DIR="${OPENG2P_WORKSPACE}/iam-service/iam-staff-portal-api"

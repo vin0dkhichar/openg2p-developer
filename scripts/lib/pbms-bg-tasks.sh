@@ -120,3 +120,33 @@ pbms_bg_tasks_installed() {
     && [[ -x "${CELERY_BEAT_DIR}/venv/bin/python" ]] \
     && [[ -x "${CELERY_WORKERS_DIR}/venv/bin/python" ]]
 }
+
+# PBMS Celery workers import g2p_bridge_helper when Bridge is enabled; install
+# bridge models if g2p-bridge was cloned after make install-pbms-bg-tasks.
+pbms_bg_tasks_ensure_bridge_models() {
+  if [[ "${PBMS_WITH_BRIDGE:-true}" != "true" ]]; then
+    return 0
+  fi
+
+  local bridge_models_dir="${OPENG2P_WORKSPACE}/g2p-bridge/core/models"
+  if [[ ! -d "$bridge_models_dir" ]]; then
+    echo "[pbms] PBMS_WITH_BRIDGE=true but g2p-bridge is not cloned. Run: make clone PROFILE=bridge" >&2
+    return 1
+  fi
+
+  if [[ ! -x "${CELERY_WORKERS_DIR}/venv/bin/python" ]]; then
+    return 0
+  fi
+
+  if "${CELERY_WORKERS_DIR}/venv/bin/python" -c "import openg2p_g2p_bridge_models" 2>/dev/null; then
+    return 0
+  fi
+
+  echo "[pbms] Installing G2P Bridge models into PBMS Celery worker venv ..."
+  (
+    cd "$CELERY_WORKERS_DIR"
+    # shellcheck disable=SC1091
+    source venv/bin/activate
+    pip install -e "$bridge_models_dir"
+  )
+}

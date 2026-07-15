@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Start PBMS + registry + background tasks + Odoo only.
+# SPAR and Bridge are separate: make spar-run && make bridge-run
 set -euo pipefail
 
 # shellcheck disable=SC1091
@@ -7,16 +9,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/pbms-odoo.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/pbms-bg-tasks.sh"
 # shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/lib/bridge.sh"
-# shellcheck disable=SC1091
-source "$(dirname "${BASH_SOURCE[0]}")/lib/spar.sh"
 
 pbms_odoo_load_env
 pbms_bg_tasks_load_env
 bridge_load_env
-spar_load_env
 
+PBMS_WITH_REGISTRY="${PBMS_WITH_REGISTRY:-true}"
 PBMS_WITH_BRIDGE="${PBMS_WITH_BRIDGE:-true}"
-PBMS_WITH_SPAR="${PBMS_WITH_SPAR:-true}"
 
 echo "==> Ensuring infrastructure is up ..."
 make -C "$PBMS_DEV_ROOT" infra-ensure
@@ -33,33 +32,20 @@ if ! pbms_odoo_db_initialized; then
   exit 1
 fi
 
+echo "==> Stopping PBMS processes only (SPAR/Bridge left running) ..."
 bash "${PBMS_DEV_ROOT}/scripts/free-pbms-ports.sh"
-
-if [[ "${PBMS_WITH_SPAR}" == "true" ]]; then
-  bash "${PBMS_DEV_ROOT}/scripts/free-bridge-spar-ports.sh"
-fi
 
 if [[ "${PBMS_WITH_REGISTRY}" == "true" ]]; then
   # shellcheck disable=SC1091
   source "${PBMS_DEV_ROOT}/scripts/lib/registry-variant.sh"
   if registry_variant_validate "${PBMS_REGISTRY_VARIANT}" 2>/dev/null; then
-    echo "==> Starting registry (${PBMS_REGISTRY_VARIANT}) ..."
     bash "${PBMS_DEV_ROOT}/scripts/free-variant-ports.sh" "${PBMS_REGISTRY_VARIANT}"
+    echo "==> Starting registry (${PBMS_REGISTRY_VARIANT}) ..."
     bash "${PBMS_DEV_ROOT}/scripts/start-registry-variant.sh" "${PBMS_REGISTRY_VARIANT}"
   else
     echo "Registry variant '${PBMS_REGISTRY_VARIANT}' is not available. Set PBMS_WITH_REGISTRY=false or run make clone PROFILE=pbms." >&2
     exit 1
   fi
-fi
-
-if [[ "${PBMS_WITH_SPAR}" == "true" ]]; then
-  echo "==> Starting SPAR (mapper + bene portal) ..."
-  bash "${PBMS_DEV_ROOT}/scripts/start-spar.sh"
-fi
-
-if [[ "${PBMS_WITH_BRIDGE}" == "true" ]]; then
-  echo "==> Starting G2P Bridge (partner API + Celery + example bank) ..."
-  bash "${PBMS_DEV_ROOT}/scripts/start-bridge.sh"
 fi
 
 echo "==> Starting PBMS background tasks ..."
@@ -77,20 +63,18 @@ if pbms_odoo_db_initialized; then
 fi
 
 echo
-echo "PBMS stack running:"
+echo "PBMS running (SPAR/Bridge are separate commands):"
 echo "  Odoo             : http://localhost:${PBMS_HTTP_PORT:-8069}"
 echo "  Staff Portal API : ${STAFF_API_URL}/docs"
-if [[ "${PBMS_WITH_BRIDGE}" == "true" ]]; then
-  echo "  G2P Bridge API   : ${BRIDGE_API_URL}/docs"
-  echo "  Example bank API : $(bridge_example_bank_url)/docs"
-fi
-if [[ "${PBMS_WITH_SPAR}" == "true" ]]; then
-  echo "  SPAR mapper API  : $(spar_mapper_api_url)/docs"
-  echo "  SPAR bene API    : http://localhost:${SPAR_BENE_API_PORT}/docs"
-fi
 if [[ "${PBMS_WITH_REGISTRY}" == "true" ]]; then
   echo "  Registry variant : ${PBMS_REGISTRY_VARIANT}"
 fi
+echo
+echo "Disbursement pipeline (run in other terminals, in order):"
+echo "  make spar-run          # SPAR mapper :8004"
+echo "  make bridge-run        # G2P Bridge + Celery"
+echo "  make verify-spar       # optional check"
+echo "  make verify-bridge     # optional check"
 echo
 echo "Press Ctrl+C to stop Odoo (background services keep running in this shell)."
 echo

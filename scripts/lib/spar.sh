@@ -64,6 +64,47 @@ spar_mapper_api_url() {
   echo "http://localhost:${SPAR_MAPPER_API_PORT}"
 }
 
+spar_mapper_healthy() {
+  curl -sf "$(spar_mapper_api_url)/docs" >/dev/null 2>&1
+}
+
+spar_bene_healthy() {
+  curl -sf "http://localhost:${SPAR_BENE_API_PORT}/docs" >/dev/null 2>&1
+}
+
+spar_wait_for_mapper() {
+  local url="${1:-$(spar_mapper_api_url)}"
+  local attempts="${2:-30}"
+  echo "Waiting for SPAR mapper API at ${url} ..."
+  for ((i = 1; i <= attempts; i++)); do
+    if curl -sf "${url}/docs" >/dev/null 2>&1 || curl -sf "${url}/ping" >/dev/null 2>&1; then
+      echo "SPAR mapper API is ready."
+      return 0
+    fi
+    sleep 1
+  done
+  echo "Timed out waiting for SPAR mapper API at ${url}" >&2
+  return 1
+}
+
+spar_seed_farmer_links_if_needed() {
+  if [[ "${SPAR_AUTO_SEED_FARMER_LINKS:-true}" != "true" ]]; then
+    return 0
+  fi
+  if ! spar_db_migrated; then
+    return 0
+  fi
+  local linked
+  linked="$(PGPASSWORD="${SPAR_DB_PASSWORD}" psql \
+    -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U "${SPAR_DB_USER}" -d "${SPAR_DB_NAME}" \
+    -tc "SELECT COUNT(*) FROM id_fa_mappings WHERE active = true;" 2>/dev/null | tr -d '[:space:]')"
+  if [[ -n "$linked" && "$linked" -gt 0 ]]; then
+    echo "[spar-seed] Skipping seed — ${linked} active ID→FA mappings already present."
+    return 0
+  fi
+  bash "${SPAR_DEV_ROOT}/scripts/seed-spar-farmer-links.sh" || true
+}
+
 spar_db_migrated() {
   PGPASSWORD="${SPAR_DB_PASSWORD}" psql \
     -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U "${SPAR_DB_USER}" -d "${SPAR_DB_NAME}" \

@@ -83,12 +83,6 @@ stop_matching_processes "AWE admin UI (vite)" ".openg2p-vite.config.mjs"
 
 # Celery workers/beat do not bind HTTP ports; stop them explicitly so DB
 # connections from a prior run are released before restart.
-stop_matching_processes "${VARIANT} Celery beat" "${REGISTRY_ROOT}/celery/openg2p-registry-celery-beat-producers"
-stop_matching_processes "${VARIANT} Celery worker" "${REGISTRY_ROOT}/celery/openg2p-registry-celery-workers"
-
-# Celery beat persists its schedule under /tmp. A stale file from an older
-# registry-platform version can reference removed tasks (e.g.
-# intake_form_change_request_beat_producer) and spam errors in a tight loop.
 case "$VARIANT" in
   farmer-registry) BEAT_DB_NAME="${FARMER_REGISTRY_DB:-farmer_registry_db}" ;;
   national-social-registry) BEAT_DB_NAME="${NSR_REGISTRY_DB:-nsr_registry_db}" ;;
@@ -99,6 +93,17 @@ case "$VARIANT" in
     BEAT_DB_NAME="${EXTENSION_REGISTRY_DB}"
     ;;
 esac
+
+stop_matching_processes "${VARIANT} Celery beat" "openg2p-registry-celery-beat-producers.*celery_app beat"
+stop_matching_processes "${VARIANT} Celery beat worker" "openg2p-registry-celery-beat-producers.*worker -Q celery"
+stop_matching_processes "${VARIANT} Celery beat" "celery-beat-${BEAT_DB_NAME}.db"
+stop_matching_processes "${VARIANT} Celery beat" "${REGISTRY_ROOT}/celery/openg2p-registry-celery-beat-producers"
+stop_matching_processes "${VARIANT} Celery worker" "${REGISTRY_ROOT}/celery/openg2p-registry-celery-workers"
+stop_matching_processes "${VARIANT} Celery worker" "openg2p-registry-celery-workers.*farmer_registry_worker_queue"
+
+# Celery beat persists its schedule under /tmp. A stale file from an older
+# registry-platform version can reference removed tasks (e.g.
+# intake_form_change_request_beat_producer) and spam errors in a tight loop.
 BEAT_SCHEDULE="/tmp/celery-beat-${BEAT_DB_NAME}.db"
 if [[ -f "$BEAT_SCHEDULE" ]]; then
   echo "Removing stale Celery beat schedule ${BEAT_SCHEDULE} ..."
