@@ -361,10 +361,14 @@ See [profiles/custom-registry-extension-dev.md](../profiles/custom-registry-exte
 - One-time bootstrap: **`make farmer-setup`** (install IAM/AWE/extension including Celery venvs, migrate schema, seed configuration SQL)
 - Optional demo data: `LOAD_SAMPLE_DATA=true make farmer-registry-seed`
 
-### PBMS (Odoo)
+### PBMS (Odoo + background tasks)
 
-- Additional clone size (~Odoo 17 source)
-- Run `make install-odoo` once before first `make pbms-run`
+- Monorepo: [OpenG2P/pbms](https://github.com/OpenG2P/pbms) — Odoo under `pbms/odoo/`, bg tasks under `pbms/core/` and `pbms/apis/`
+- **Full stack:** `make pbms-setup` then `make pbms-run` starts Farmer Registry (default), PBMS staff portal API (port 8050), Celery beat/worker, and Odoo (8069)
+- Databases: `pbmsdb`, `bgtaskdb`, plus registry DB (`farmer_registry_db` by default)
+- Redis is required for Celery — set `USE_EXTERNAL_REDIS=false` to start Docker Redis, or run a local Redis on `REDIS_HOST:REDIS_PORT`
+- Clone with `make clone PROFILE=pbms` (includes Farmer Registry repos for beneficiary search)
+- See [profiles/pbms-dev.md](../profiles/pbms-dev.md)
 
 ---
 

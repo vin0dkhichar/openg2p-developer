@@ -4,7 +4,7 @@ name: openg2p-developer
 services:
   pbms:
     profiles: [pbms, full]
-    image: ${PBMS_IMAGE:-openg2p/openg2p-pbms-core:1.2.6}
+    image: ${PBMS_IMAGE:-openg2p/openg2p-pbms-core:develop}
     container_name: openg2p-pbms
     depends_on:
       postgres:

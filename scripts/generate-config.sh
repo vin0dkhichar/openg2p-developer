@@ -14,6 +14,7 @@ fi
 
 OPENG2P_WORKSPACE="$(workspace_open)"
 ODOO_PATH="${ODOO_PATH:-${OPENG2P_WORKSPACE}/odoo17}"
+PBMS_PATH="${PBMS_PATH:-${OPENG2P_WORKSPACE}/pbms}"
 GENERATED_DIR="${ROOT_DIR}/generated"
 
 POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
@@ -27,6 +28,13 @@ MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-adminsecret}"
 KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:8080}"
 
 PBMS_HTTP_PORT="${PBMS_HTTP_PORT:-8069}"
+PBMS_STAFF_API_PORT="${PBMS_STAFF_API_PORT:-8050}"
+PBMS_DB_NAME="${PBMS_DB_NAME:-pbmsdb}"
+PBMS_DB_USER="${PBMS_DB_USER:-pbmsuser}"
+PBMS_DB_PASSWORD="${PBMS_DB_PASSWORD:-pbmspass}"
+PBMS_BGTASK_DB_NAME="${PBMS_BGTASK_DB_NAME:-bgtaskdb}"
+PBMS_REGISTRY_VARIANT="${PBMS_REGISTRY_VARIANT:-farmer-registry}"
+PBMS_REDIS_DB="${PBMS_REDIS_DB:-1}"
 FARMER_REGISTRY_STAFF_API_PORT="${FARMER_REGISTRY_STAFF_API_PORT:-8001}"
 FARMER_REGISTRY_UI_PORT="${FARMER_REGISTRY_UI_PORT:-3000}"
 NSR_REGISTRY_STAFF_API_PORT="${NSR_REGISTRY_STAFF_API_PORT:-8011}"
@@ -45,6 +53,8 @@ G2P_BRIDGE_API_PORT="${G2P_BRIDGE_API_PORT:-8002}"
 G2P_BRIDGE_EXAMPLE_BANK_PORT="${G2P_BRIDGE_EXAMPLE_BANK_PORT:-8003}"
 SPAR_MAPPER_API_PORT="${SPAR_MAPPER_API_PORT:-8004}"
 SPAR_BENE_API_PORT="${SPAR_BENE_API_PORT:-8005}"
+G2P_BRIDGE_REDIS_DB="${G2P_BRIDGE_REDIS_DB:-2}"
+EXAMPLE_BANK_REDIS_DB="${EXAMPLE_BANK_REDIS_DB:-3}"
 
 # Registry staff API JWT middleware (keep false for local dev — true can cause dashboard login loops)
 REGISTRY_AUTH_ENABLED="${REGISTRY_AUTH_ENABLED:-false}"
@@ -52,6 +62,7 @@ REGISTRY_AUTH_ENABLED="${REGISTRY_AUTH_ENABLED:-false}"
 mkdir -p \
   "${GENERATED_DIR}/farmer-registry" \
   "${GENERATED_DIR}/national-social-registry" \
+  "${GENERATED_DIR}/pbms" \
   "${GENERATED_DIR}/iam/data" \
   "${GENERATED_DIR}/awe" \
   "${GENERATED_DIR}/bridge" \
@@ -132,9 +143,57 @@ render_registry_variant() {
 render "${ROOT_DIR}/templates/pbms-odoo.conf.tpl" "${GENERATED_DIR}/odoo/pbms-odoo.conf" \
   "{{OPENG2P_WORKSPACE}}" "${OPENG2P_WORKSPACE}" \
   "{{ODOO_PATH}}" "${ODOO_PATH}" \
+  "{{PBMS_PATH}}" "${PBMS_PATH}" \
   "{{POSTGRES_HOST}}" "${POSTGRES_HOST}" \
   "{{POSTGRES_PORT}}" "${POSTGRES_PORT}" \
   "{{PBMS_HTTP_PORT}}" "${PBMS_HTTP_PORT}"
+
+case "${PBMS_REGISTRY_VARIANT}" in
+  farmer-registry) PBMS_REGISTRY_DB_NAME="farmer_registry_db" ;;
+  national-social-registry) PBMS_REGISTRY_DB_NAME="nsr_registry_db" ;;
+  *)
+    # shellcheck disable=SC1091
+    source "${ROOT_DIR}/scripts/lib/extension-manifest.sh"
+    if extension_manifest_load "${PBMS_REGISTRY_VARIANT}" 2>/dev/null; then
+      PBMS_REGISTRY_DB_NAME="${EXTENSION_REGISTRY_DB}"
+    else
+      PBMS_REGISTRY_DB_NAME="farmer_registry_db"
+    fi
+    ;;
+esac
+
+PBMS_SIGNING_KEY_PATH="${PBMS_SIGNING_KEY_PATH:-${OPENG2P_WORKSPACE}/g2p-bridge/test/keys/test-partner.p12}"
+PBMS_SIGNING_KEY_PASSWORD="${PBMS_SIGNING_KEY_PASSWORD:-testpartner}"
+
+pbms_common=(
+  "{{POSTGRES_HOST}}" "${POSTGRES_HOST}"
+  "{{POSTGRES_PORT}}" "${POSTGRES_PORT}"
+  "{{POSTGRES_PASSWORD}}" "${POSTGRES_PASSWORD}"
+  "{{REDIS_HOST}}" "${REDIS_HOST}"
+  "{{REDIS_PORT}}" "${REDIS_PORT}"
+  "{{PBMS_DB_NAME}}" "${PBMS_DB_NAME}"
+  "{{PBMS_DB_USER}}" "${PBMS_DB_USER}"
+  "{{PBMS_DB_PASSWORD}}" "${PBMS_DB_PASSWORD}"
+  "{{PBMS_BGTASK_DB_NAME}}" "${PBMS_BGTASK_DB_NAME}"
+  "{{PBMS_REGISTRY_DB_NAME}}" "${PBMS_REGISTRY_DB_NAME}"
+  "{{PBMS_STAFF_API_PORT}}" "${PBMS_STAFF_API_PORT}"
+  "{{PBMS_REDIS_DB}}" "${PBMS_REDIS_DB}"
+  "{{G2P_BRIDGE_API_PORT}}" "${G2P_BRIDGE_API_PORT}"
+  "{{PBMS_SIGNING_KEY_PATH}}" "${PBMS_SIGNING_KEY_PATH}"
+  "{{PBMS_SIGNING_KEY_PASSWORD}}" "${PBMS_SIGNING_KEY_PASSWORD}"
+)
+
+render "${ROOT_DIR}/templates/pbms-staff-portal-api.env.tpl" \
+  "${GENERATED_DIR}/pbms/staff-portal-api.env" \
+  "${pbms_common[@]}"
+
+render "${ROOT_DIR}/templates/pbms-celery-beat.env.tpl" \
+  "${GENERATED_DIR}/pbms/celery-beat.env" \
+  "${pbms_common[@]}"
+
+render "${ROOT_DIR}/templates/pbms-celery-workers.env.tpl" \
+  "${GENERATED_DIR}/pbms/celery-workers.env" \
+  "${pbms_common[@]}"
 
 render_registry_variant \
   "farmer-registry" \
@@ -257,7 +316,9 @@ for tpl in "${ROOT_DIR}"/templates/bridge-*.env.tpl "${ROOT_DIR}"/templates/spar
     "{{G2P_BRIDGE_API_PORT}}" "${G2P_BRIDGE_API_PORT}" \
     "{{G2P_BRIDGE_EXAMPLE_BANK_PORT}}" "${G2P_BRIDGE_EXAMPLE_BANK_PORT}" \
     "{{SPAR_MAPPER_API_PORT}}" "${SPAR_MAPPER_API_PORT}" \
-    "{{SPAR_BENE_API_PORT}}" "${SPAR_BENE_API_PORT}"
+    "{{SPAR_BENE_API_PORT}}" "${SPAR_BENE_API_PORT}" \
+    "{{G2P_BRIDGE_REDIS_DB}}" "${G2P_BRIDGE_REDIS_DB}" \
+    "{{EXAMPLE_BANK_REDIS_DB}}" "${EXAMPLE_BANK_REDIS_DB}"
 done
 
 echo

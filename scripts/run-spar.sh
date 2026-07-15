@@ -1,59 +1,32 @@
 #!/usr/bin/env bash
+# Start SPAR only (mapper + bene portal). Does not start or stop Bridge/PBMS.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-if [[ -f .env ]]; then
-  # shellcheck disable=SC1091
-  source .env
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/scripts/lib/spar.sh"
+spar_load_env
+
+if spar_mapper_healthy && spar_bene_healthy; then
+  echo "SPAR already running."
+  echo "  Mapper : $(spar_mapper_api_url)/docs"
+  echo "  Bene   : http://localhost:${SPAR_BENE_API_PORT}/docs"
+  exit 0
 fi
 
-OPENG2P_WORKSPACE="${OPENG2P_WORKSPACE:-../openg2p-workspace}"
-OPENG2P_WORKSPACE="$(cd "$ROOT_DIR" && cd "$OPENG2P_WORKSPACE" && pwd)"
-SPAR_ROOT="${OPENG2P_WORKSPACE}/spar"
+echo "Starting SPAR ..."
+bash "${ROOT_DIR}/scripts/free-spar-ports.sh"
+bash "${ROOT_DIR}/scripts/start-spar.sh"
 
-MAPPER_DIR="${SPAR_ROOT}/core/mapper-partner-api"
-BENE_DIR="${SPAR_ROOT}/core/bene-portal-api"
-
-"${ROOT_DIR}/scripts/infra-wait.sh"
-"${ROOT_DIR}/scripts/generate-config.sh" >/dev/null
-
-if [[ ! -d "$SPAR_ROOT" ]]; then
-  echo "SPAR repo not found. Run: make clone" >&2
+if ! spar_mapper_healthy; then
+  echo "ERROR: SPAR mapper API did not come up on port ${SPAR_MAPPER_API_PORT}." >&2
+  echo "  Check: tail -30 generated/run/spar-mapper-api.log" >&2
   exit 1
 fi
 
-run_service() {
-  local name="$1"
-  local dir="$2"
-  local env_file="$3"
-  shift 3
-
-  if [[ ! -d "$dir" ]]; then
-    echo "Skipping ${name}: directory not found (${dir})" >&2
-    return 0
-  fi
-
-  echo "Starting ${name}..."
-  (
-    cd "$dir"
-    set -a
-    # shellcheck disable=SC1090
-    source "$env_file"
-    set +a
-    exec "$@"
-  ) &
-  echo "${name} pid=$!"
-}
-
-echo "SPAR native stack"
-echo "Ensure Python venvs/deps are installed in each project (see README)."
-
-run_service "spar-mapper-api" "$MAPPER_DIR" "${ROOT_DIR}/generated/spar/mapper-partner-api.env" \
-  python3 main.py run
-
-run_service "spar-bene-api" "$BENE_DIR" "${ROOT_DIR}/generated/spar/bene-portal-api.env" \
-  python3 main.py run
-
-wait
+echo
+echo "SPAR started in background (this command exits; SPAR keeps running)."
+echo "  Logs   : generated/run/spar-mapper-api.log"
+echo "  Verify : make verify-spar"

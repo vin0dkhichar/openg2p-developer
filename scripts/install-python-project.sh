@@ -43,8 +43,11 @@ pip install --upgrade pip wheel
 install_requirements() {
   local req_file="$1"
   while IFS= read -r line || [[ -n "$line" ]]; do
-    line="${line%%#*}"
     line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    # Strip trailing comments, but keep pip URL fragments (#subdirectory=, #egg=).
+    line="${line%%[[:space:]]#*}"
     line="${line%"${line##*[![:space:]]}"}"
     [[ -z "$line" ]] && continue
     if [[ "$line" == psycopg2-binary* ]]; then
@@ -64,7 +67,7 @@ if [[ -f requirements.txt ]]; then
   install_requirements requirements.txt
 fi
 
-if [[ -f pyproject.toml ]]; then
+if [[ -f pyproject.toml ]] && [[ "${SKIP_EDITABLE_INSTALL:-}" != "1" ]]; then
   pip install -e .
 fi
 

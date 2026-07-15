@@ -22,6 +22,10 @@ $$;
 SELECT 'CREATE DATABASE pbmsdb OWNER pbmsuser'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'pbmsdb')\gexec
 
+-- PBMS background tasks (eligibility / entitlement engine state)
+SELECT 'CREATE DATABASE bgtaskdb OWNER postgres'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'bgtaskdb')\gexec
+
 -- Registry Gen2: Farmer Registry
 SELECT 'CREATE DATABASE farmer_registry_db OWNER postgres'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'farmer_registry_db')\gexec
