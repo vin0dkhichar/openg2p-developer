@@ -126,3 +126,21 @@ pbms_odoo_set_staff_portal_api_url() {
     -c "INSERT INTO ir_config_parameter (key, value, create_uid, write_uid, create_date, write_date)
         VALUES ('g2p_pbms.staff_portal_api_url', '${url}', 1, 1, NOW() AT TIME ZONE 'UTC', NOW() AT TIME ZONE 'UTC');"
 }
+
+pbms_odoo_set_g2p_bridge_api_url() {
+  local url="$1"
+
+  if ! pbms_odoo_db_initialized; then
+    return 1
+  fi
+
+  PGPASSWORD="${PBMS_DB_PASSWORD}" psql \
+    -h "${POSTGRES_HOST}" \
+    -p "${POSTGRES_PORT}" \
+    -U "${PBMS_DB_USER}" \
+    -d "${PBMS_DB_NAME}" \
+    -v ON_ERROR_STOP=1 \
+    -c "DELETE FROM ir_config_parameter WHERE key = 'g2p_pbms.g2p_bridge_api_url';" \
+    -c "INSERT INTO ir_config_parameter (key, value, create_uid, write_uid, create_date, write_date)
+        VALUES ('g2p_pbms.g2p_bridge_api_url', '${url}', 1, 1, NOW() AT TIME ZONE 'UTC', NOW() AT TIME ZONE 'UTC');"
+}

@@ -5,12 +5,21 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/pbms-odoo.sh"
 # shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/lib/pbms-bg-tasks.sh"
+# shellcheck disable=SC1091
+source "$(dirname "${BASH_SOURCE[0]}")/lib/bridge.sh"
+# shellcheck disable=SC1091
+source "$(dirname "${BASH_SOURCE[0]}")/lib/spar.sh"
 
 pbms_odoo_load_env
 pbms_bg_tasks_load_env
+bridge_load_env
+spar_load_env
+
+PBMS_WITH_BRIDGE="${PBMS_WITH_BRIDGE:-true}"
+PBMS_WITH_SPAR="${PBMS_WITH_SPAR:-true}"
 
 echo "==> Ensuring infrastructure is up ..."
-make -C "$PBMS_DEV_ROOT" infra-up
+make -C "$PBMS_DEV_ROOT" infra-ensure
 
 "${PBMS_DEV_ROOT}/scripts/infra-wait.sh"
 "${PBMS_DEV_ROOT}/scripts/generate-config.sh" >/dev/null
@@ -26,6 +35,10 @@ fi
 
 bash "${PBMS_DEV_ROOT}/scripts/free-pbms-ports.sh"
 
+if [[ "${PBMS_WITH_SPAR}" == "true" ]]; then
+  bash "${PBMS_DEV_ROOT}/scripts/free-bridge-spar-ports.sh"
+fi
+
 if [[ "${PBMS_WITH_REGISTRY}" == "true" ]]; then
   # shellcheck disable=SC1091
   source "${PBMS_DEV_ROOT}/scripts/lib/registry-variant.sh"
@@ -39,19 +52,42 @@ if [[ "${PBMS_WITH_REGISTRY}" == "true" ]]; then
   fi
 fi
 
+if [[ "${PBMS_WITH_SPAR}" == "true" ]]; then
+  echo "==> Starting SPAR (mapper + bene portal) ..."
+  bash "${PBMS_DEV_ROOT}/scripts/start-spar.sh"
+fi
+
+if [[ "${PBMS_WITH_BRIDGE}" == "true" ]]; then
+  echo "==> Starting G2P Bridge (partner API + Celery + example bank) ..."
+  bash "${PBMS_DEV_ROOT}/scripts/start-bridge.sh"
+fi
+
 echo "==> Starting PBMS background tasks ..."
 bash "${PBMS_DEV_ROOT}/scripts/start-pbms-bg-tasks.sh"
 
 STAFF_API_URL="$(pbms_bg_tasks_staff_api_url)"
+BRIDGE_API_URL="$(bridge_partner_api_url)"
 if pbms_odoo_db_initialized; then
   echo "==> Configuring Odoo staff portal API URL (${STAFF_API_URL}) ..."
   pbms_odoo_set_staff_portal_api_url "${STAFF_API_URL}"
+  if [[ "${PBMS_WITH_BRIDGE}" == "true" ]]; then
+    echo "==> Configuring Odoo G2P Bridge API URL (${BRIDGE_API_URL}) ..."
+    pbms_odoo_set_g2p_bridge_api_url "${BRIDGE_API_URL}"
+  fi
 fi
 
 echo
 echo "PBMS stack running:"
 echo "  Odoo             : http://localhost:${PBMS_HTTP_PORT:-8069}"
 echo "  Staff Portal API : ${STAFF_API_URL}/docs"
+if [[ "${PBMS_WITH_BRIDGE}" == "true" ]]; then
+  echo "  G2P Bridge API   : ${BRIDGE_API_URL}/docs"
+  echo "  Example bank API : $(bridge_example_bank_url)/docs"
+fi
+if [[ "${PBMS_WITH_SPAR}" == "true" ]]; then
+  echo "  SPAR mapper API  : $(spar_mapper_api_url)/docs"
+  echo "  SPAR bene API    : http://localhost:${SPAR_BENE_API_PORT}/docs"
+fi
 if [[ "${PBMS_WITH_REGISTRY}" == "true" ]]; then
   echo "  Registry variant : ${PBMS_REGISTRY_VARIANT}"
 fi

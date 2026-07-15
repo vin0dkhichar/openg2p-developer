@@ -13,9 +13,9 @@ COMPOSE_PROFILES := --profile infra --profile with-redis --profile pbms --profil
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup clone generate install-odoo install-iam install-awe install-registry-extension install-registry-ui install-registry-db-seed install-pbms-bg-tasks \
-	infra-up infra-down up down status logs clean \
-	pbms-setup pbms-init init-pbms-bg-tasks pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
+.PHONY: help setup clone generate install-odoo install-iam install-awe install-registry-extension install-registry-ui install-registry-db-seed install-pbms-bg-tasks install-bridge install-spar \
+	infra-ensure infra-up keycloak-init infra-down up down status logs clean \
+	pbms-setup pbms-full-setup pbms-init init-pbms-bg-tasks init-bridge init-spar seed-spar-farmer-links pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
 	farmer-setup farmer-registry-init farmer-registry-migrate farmer-registry-seed farmer-registry-fix-seed-enums farmer-registry-validate-seed \
 	nsr-setup nsr-registry-init nsr-registry-migrate nsr-registry-seed seed-registry iam-init awe-init \
 	extension-package extension-setup extension-run extension-init extension-migrate extension-seed clone-profiles \
@@ -41,6 +41,12 @@ install-odoo: ## Install Odoo 17 Python dependencies into a venv
 
 install-pbms-bg-tasks: ## Install PBMS staff portal API and Celery Python dependencies
 	@bash scripts/install-pbms-bg-tasks.sh
+
+install-bridge: ## Install G2P Bridge partner API, Celery, and example bank Python dependencies
+	@bash scripts/install-bridge.sh
+
+install-spar: ## Install SPAR mapper and bene portal API Python dependencies
+	@bash scripts/install-spar.sh
 
 install-registry-extension: ## Install domain extension (VARIANT=farmer-registry|national-social-registry)
 	@bash scripts/install-registry-extension.sh $(VARIANT)
@@ -127,13 +133,17 @@ extension-run: generate ## Run custom extension natively (NAME=disability-regist
 	@test -n "$(NAME)" || (echo "Set NAME=your-extension-slug" >&2; exit 1)
 	@bash scripts/run-registry-variant.sh "$(NAME)"
 
-infra-up: ## Start shared infrastructure (Postgres, Redis, MinIO, Keycloak)
+infra-ensure: ## Start infra containers if stopped (no Keycloak provisioning)
 	@test -f .env || cp .env.example .env
 	@bash -c 'set -a; source .env; set +a; \
 		profiles=(--profile infra); \
 		if [[ "$${USE_EXTERNAL_REDIS:-false}" != "true" ]]; then profiles+=(--profile with-redis); fi; \
 		$(COMPOSE) $(COMPOSE_FILES) "$${profiles[@]}" up -d'
+
+keycloak-init: infra-ensure ## Provision Keycloak staff realm and OIDC clients
 	@bash -c 'set -a; source .env; set +a; $(COMPOSE) -f compose/docker-compose.infra.yml --profile infra up keycloak-init --abort-on-container-exit' || true
+
+infra-up: infra-ensure keycloak-init ## Start shared infrastructure (Postgres, Redis, MinIO, Keycloak)
 	@bash -c 'set -a; source .env; set +a; \
 		echo "Infrastructure started."; \
 		echo "  Postgres: localhost:$${POSTGRES_PORT:-5432}"; \
@@ -145,7 +155,8 @@ infra-up: ## Start shared infrastructure (Postgres, Redis, MinIO, Keycloak)
 		echo "  MinIO:    http://localhost:9000 (console :9001)"; \
 		echo "  Keycloak: http://localhost:8080 (admin/admin by default)"; \
 		echo "  Staff realm + OIDC clients are provisioned automatically (see keycloak/README.md)"; \
-		echo "  Dev SSO user: staff / staff (override in .env)"'
+		echo "  Dev SSO user: staff / staff (override in .env)"; \
+		echo "  Re-provision Keycloak only: make keycloak-init"'
 
 infra-down: ## Stop shared infrastructure
 	@$(COMPOSE) $(COMPOSE_FILES) --profile infra down
@@ -193,13 +204,25 @@ up-full: generate infra-up ## Start infra + all container profiles
 pbms-setup: ## One-time PBMS bootstrap (infra, deps, registry, Odoo + bg-task DBs)
 	@bash scripts/pbms-setup.sh
 
+pbms-full-setup: ## One-time PBMS + SPAR + Bridge bootstrap (disbursement-ready)
+	@bash scripts/pbms-full-setup.sh
+
 pbms-init: generate ## Bootstrap pbmsdb with Odoo base modules (first-time only)
 	@bash scripts/init-pbms.sh
 
 init-pbms-bg-tasks: generate ## Migrate bgtaskdb schema for PBMS background tasks
 	@bash scripts/init-pbms-bg-tasks.sh
 
-pbms-run: generate ## Run full PBMS stack (registry, bg tasks, Odoo)
+init-bridge: generate ## Migrate g2pbridgedb and examplebankdb for G2P Bridge
+	@bash scripts/init-bridge.sh
+
+init-spar: generate ## Migrate spardb and seed SPAR strategies
+	@bash scripts/init-spar.sh
+
+seed-spar-farmer-links: ## Link farmer registry internal_record_id → bank account in SPAR
+	@bash scripts/seed-spar-farmer-links.sh
+
+pbms-run: ## Run full PBMS stack (registry, bg tasks, Odoo)
 	@bash scripts/run-pbms.sh
 
 farmer-registry-run: generate ## Run Farmer Registry Gen2 natively

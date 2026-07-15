@@ -95,4 +95,4 @@ If eligibility has not run yet, search returns an empty list (not a server error
 
 ## G2P Bridge
 
-Disbursement workers call G2P Bridge when configured. For end-to-end payment testing, see `pbms-bridge-dev.md`.
+Disbursement workers call G2P Bridge when configured. For end-to-end payment testing with SPAR, see `pbms-bridge-spar-dev.md` (full stack) or `pbms-bridge-dev.md` (Bridge only).

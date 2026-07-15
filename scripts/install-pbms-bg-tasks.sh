@@ -53,4 +53,15 @@ install_project "$CELERY_BEAT_DIR" \
 install_project "$CELERY_WORKERS_DIR" \
   "$BG_TASK_MODELS_DIR" "$PBMS_MODELS_DIR" "$REGISTRY_ADAPTERS_DIR"
 
+# Disbursement envelope worker talks to G2P Bridge API models.
+BRIDGE_MODELS_DIR="${PBMS_PATH%/pbms}/g2p-bridge/core/models"
+if [[ -d "$BRIDGE_MODELS_DIR" ]]; then
+  (
+    cd "$CELERY_WORKERS_DIR"
+    # shellcheck disable=SC1091
+    source venv/bin/activate
+    pip install -e "$BRIDGE_MODELS_DIR"
+  )
+fi
+
 echo "PBMS background-task dependencies installed."
