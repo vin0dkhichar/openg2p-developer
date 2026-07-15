@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 
   redis:
-    profiles: [infra, farmer-registry, nsr-registry, bridge, full]
+    profiles: [with-redis, farmer-registry, nsr-registry, bridge, full]
     image: redis:7-alpine
     container_name: openg2p-redis
     ports:
@@ -160,6 +160,7 @@ services:
       - ../scripts/keycloak-init.sh:/keycloak-init.sh:ro
       - ../scripts/keycloak-ensure-extension-clients.sh:/keycloak-ensure-extension-clients.sh:ro
       - ../scripts/lib/extension-manifest.sh:/scripts/lib/extension-manifest.sh:ro
+      - ../scripts/lib/keycloak-registry-roles.sh:/scripts/lib/keycloak-registry-roles.sh:ro
       - ${OPENG2P_WORKSPACE:-../openg2p-workspace}:/workspace:ro
     entrypoint: ["/bin/bash", "/keycloak-init.sh"]
     restart: "no"

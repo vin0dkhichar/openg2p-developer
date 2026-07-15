@@ -121,7 +121,7 @@ LOAD_SAMPLE_DATA=true make up-nsr-registry-seed
 
 ## UI repo
 
-Default UI path: `openg2p-registry-gen2-staff-portal-ui` on port `3010` (override with `NSR_REGISTRY_UI_PATH` in `.env`).
+Default UI path: `registry-platform/ui/staff-portal-ui` on port `3010` (override with `NSR_REGISTRY_UI_PATH` in `.env`).
 
 Farmer Registry uses the same UI repo on port `3000` with a separate generated env file, so both variants can run side by side.
 
@@ -130,12 +130,11 @@ Farmer Registry uses the same UI repo on port `3000` with a separate generated e
 
 | Repo                                    | Purpose                                    |
 | --------------------------------------- | ------------------------------------------ |
-| `registry-platform`                     | Shared Gen2 APIs, Celery worker, Celery beat producers |
+| `registry-platform`                     | Shared Gen2 APIs, Celery worker, Celery beat producers, staff portal UI |
 | `national-social-registry`              | Domain extension + db-seed tooling         |
-| `openg2p-iam-service`                   | SSO broker for staff portal login          |
+| `iam-service`                           | SSO broker for staff portal login          |
 | `awe`                                   | Approval Workflow Engine (CR + intake)     |
 | `openg2p-data`                          | Shared demography JSON for NSR sample load (auto-converted to CSV) |
-| `openg2p-registry-gen2-staff-portal-ui` | Staff portal frontend                      |
 
 
 ## Optional container mode

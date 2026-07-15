@@ -18,6 +18,7 @@ mkdir -p "$OPENG2P_WORKSPACE"
 ODOO_REF="${ODOO_REF:-17.0}"
 PBMS_REF="${PBMS_REF:-develop}"
 REGISTRY_REF="${REGISTRY_REF:-develop}"
+IAM_REF="${IAM_REF:-${REGISTRY_REF}}"
 FARMER_REGISTRY_REF="${FARMER_REGISTRY_REF:-develop}"
 NSR_REF="${NSR_REF:-develop}"
 G2P_BRIDGE_REF="${G2P_BRIDGE_REF:-develop}"
@@ -70,11 +71,8 @@ clone_repo_key() {
     registry_platform)
       clone_repo "Registry Platform" "https://github.com/OpenG2P/registry-platform.git" "$REGISTRY_REF" "registry-platform"
       ;;
-    registry_gen2_staff_portal_ui)
-      clone_repo "Registry Gen2 Staff Portal UI" "https://github.com/OpenG2P/openg2p-registry-gen2-staff-portal-ui.git" "$REGISTRY_REF" "openg2p-registry-gen2-staff-portal-ui"
-      ;;
-    openg2p_iam)
-      clone_repo "OpenG2P IAM Service" "https://github.com/OpenG2P/openg2p-iam-service.git" "$REGISTRY_REF" "openg2p-iam-service"
+    iam_service)
+      clone_repo "IAM Service" "https://github.com/OpenG2P/iam-service.git" "$IAM_REF" "iam-service"
       ;;
     openg2p_data)
       clone_repo "OpenG2P Sample Data" "https://github.com/OpenG2P/openg2p-data.git" "develop" "openg2p-data"
@@ -89,7 +87,7 @@ clone_repo_key() {
       clone_repo "G2P Bridge" "https://github.com/OpenG2P/g2p-bridge.git" "$G2P_BRIDGE_REF" "g2p-bridge"
       ;;
     spar)
-      clone_repo "SPAR" "https://github.com/OpenG2P/openg2p-spar.git" "$SPAR_REF" "openg2p-spar"
+      clone_repo "SPAR" "https://github.com/OpenG2P/spar.git" "$SPAR_REF" "spar"
       ;;
     awe)
       clone_repo "Approval Workflow Engine (AWE)" "https://github.com/OpenG2P/awe.git" "$AWE_REF" "awe"

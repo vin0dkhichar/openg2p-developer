@@ -21,7 +21,7 @@ resolve_path() {
 }
 
 OPENG2P_WORKSPACE="$(resolve_path "${OPENG2P_WORKSPACE:-../openg2p-workspace}")"
-IAM_API_DIR="${OPENG2P_WORKSPACE}/openg2p-iam-service/iam-staff-portal-api"
+IAM_API_DIR="${OPENG2P_WORKSPACE}/iam-service/iam-staff-portal-api"
 ENV_FILE="${ROOT_DIR}/generated/iam/staff-portal-api.env"
 
 "${ROOT_DIR}/scripts/infra-wait.sh"

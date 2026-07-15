@@ -9,9 +9,8 @@ registry_variant_load_env
 OPENG2P_WORKSPACE="$(registry_variant_resolve_path "$ROOT_DIR" "${OPENG2P_WORKSPACE:-../openg2p-workspace}")"
 
 UI_DIRS=(
-  "${FARMER_REGISTRY_UI_PATH:-${OPENG2P_WORKSPACE}/openg2p-registry-gen2-staff-portal-ui}"
-  "${NSR_REGISTRY_UI_PATH:-${OPENG2P_WORKSPACE}/openg2p-registry-gen2-staff-portal-ui}"
-  "${OPENG2P_WORKSPACE}/registry-platform/ui/staff-portal-ui"
+  "${FARMER_REGISTRY_UI_PATH:-${OPENG2P_WORKSPACE}/registry-platform/ui/staff-portal-ui}"
+  "${NSR_REGISTRY_UI_PATH:-${OPENG2P_WORKSPACE}/registry-platform/ui/staff-portal-ui}"
 )
 
 installed=()

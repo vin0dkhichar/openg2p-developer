@@ -9,6 +9,8 @@ if [[ ! -f "${LIB_DIR}/extension-manifest.sh" && -f /scripts/lib/extension-manif
 fi
 # shellcheck disable=SC1091
 source "${LIB_DIR}/extension-manifest.sh"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/keycloak-registry-roles.sh"
 
 KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:8080}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-staff}"
@@ -103,12 +105,7 @@ for manifest in "${manifests[@]}"; do
     -s 'redirectUris=["http://localhost:'"${ui_port}"'/*"]' \
     -s 'webOrigins=["http://localhost:'"${ui_port}"'"]'
 
-  for role in \
-    "Operations Administrator" \
-    "Technical Administrator" \
-    "Data Supervisor" \
-    "Intake Officer" \
-    "Data Editor"; do
+  for role in "${REGISTRY_STAFF_CLIENT_ROLES[@]}"; do
     ensure_client_role "${client_id}" "${role}"
     assign_client_role "${KEYCLOAK_DEV_USER:-staff}" "${client_id}" "${role}"
   done

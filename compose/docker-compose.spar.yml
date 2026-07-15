@@ -3,4 +3,4 @@ name: openg2p-developer
 # SPAR is intended to run natively for development:
 #   make infra-up && make spar-run
 #
-# After cloning openg2p-spar, you can add container builds here if needed.
+# After cloning spar, you can add container builds here if needed.

@@ -11,7 +11,7 @@ fi
 
 OPENG2P_WORKSPACE="${OPENG2P_WORKSPACE:-../openg2p-workspace}"
 OPENG2P_WORKSPACE="$(cd "$ROOT_DIR" && cd "$OPENG2P_WORKSPACE" && pwd)"
-SPAR_ROOT="${OPENG2P_WORKSPACE}/openg2p-spar"
+SPAR_ROOT="${OPENG2P_WORKSPACE}/spar"
 
 MAPPER_DIR="${SPAR_ROOT}/core/mapper-partner-api"
 BENE_DIR="${SPAR_ROOT}/core/bene-portal-api"

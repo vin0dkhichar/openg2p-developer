@@ -83,7 +83,7 @@ make extension-setup NAME=disability-registry   # once: IAM, AWE, migrate, seed
 make extension-run NAME=disability-registry
 ```
 
-Staff UI uses the shared `openg2p-registry-gen2-staff-portal-ui` repo with a generated env file on your extension's UI port.
+Staff UI uses the shared `registry-platform/ui/staff-portal-ui` app with a generated env file on your extension's UI port.
 
 `make extension-run` starts the same native stack as NSR/Farmer: staff API, **Celery beat producers**, **Celery worker**, IAM, AWE, and UI. Generated env files live under `generated/<NAME>/`:
 

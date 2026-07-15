@@ -95,7 +95,7 @@ LOAD_SAMPLE_DATA=true make up-farmer-registry-seed
 
 ## UI repo
 
-Default UI path: `openg2p-registry-gen2-staff-portal-ui` (override with `FARMER_REGISTRY_UI_PATH` in `.env`).
+Default UI path: `registry-platform/ui/staff-portal-ui` (override with `FARMER_REGISTRY_UI_PATH` in `.env`).
 
 Each variant uses its own generated UI env file and port, even when the UI repo is shared.
 
@@ -104,10 +104,9 @@ Each variant uses its own generated UI env file and port, even when the UI repo 
 
 | Repo                                    | Purpose                                                |
 | --------------------------------------- | ------------------------------------------------------ |
-| `registry-platform`                     | Shared Gen2 APIs, Celery worker, Celery beat producers |
+| `registry-platform`                     | Shared Gen2 APIs, Celery worker, Celery beat producers, staff portal UI |
 | `farmer-registry`                       | Domain extension + db-seed Docker spec                 |
-| `openg2p-registry-gen2-staff-portal-ui` | Staff portal frontend                                  |
-| `openg2p-iam-service`                   | IAM staff portal API                                   |
+| `iam-service`                           | IAM staff portal API                                   |
 | `awe`                                   | Approval Workflow Engine                               |
 
 

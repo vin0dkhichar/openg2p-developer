@@ -211,15 +211,16 @@ extension_manifest_render_template() {
 }
 
 extension_manifest_build_oidc_audiences_json() {
-  local audiences='"nsr-registry-staff-portal", "farmer-registry-staff-portal"'
+  local -a items=("nsr-registry-staff-portal" "farmer-registry-staff-portal")
   local variant manifest client_id
   while IFS= read -r variant; do
     [[ -n "$variant" ]] || continue
     manifest="$(extension_manifest_file_for_variant "$variant")"
     client_id="$(extension_manifest_get "$manifest" "keycloak_client_id")"
     [[ -n "$client_id" ]] || continue
-    audiences+=', "'"${client_id}"'"'
+    items+=("$client_id")
   done < <(extension_manifest_list_variants)
-  audiences+=', "account"'
-  printf '[%s]' "$audiences"
+  items+=("account")
+  # LoginProvider.audiences is a VARCHAR of JSON-encoded list, not a JSON array column.
+  python3 -c 'import json, sys; print(json.dumps(json.dumps(sys.argv[1:])))' "${items[@]}"
 }

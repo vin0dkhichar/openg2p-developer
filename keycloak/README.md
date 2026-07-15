@@ -14,8 +14,8 @@ Keycloak runs via Docker in dev mode:
 2. **`keycloak-init` container** runs `scripts/keycloak-init.sh` idempotently to ensure:
    - Realm: `staff`
    - OIDC clients (see table below)
-   - Client roles used by registry staff portals
-   - Dev user: `staff` / `staff` (override via `.env`)
+   - Client roles used by registry staff portals (full IAM catalog; see `scripts/lib/keycloak-registry-roles.sh`)
+   - Dev user: `staff` / `staff` with **all** registry staff portal roles on farmer/NSR clients (override via `.env`)
 
 Verify:
 

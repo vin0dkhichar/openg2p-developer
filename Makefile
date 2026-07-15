@@ -9,14 +9,14 @@ COMPOSE_FILES := \
 	-f compose/docker-compose.bridge.yml \
 	-f compose/docker-compose.spar.yml
 
-COMPOSE_PROFILES := --profile infra --profile pbms --profile farmer-registry --profile nsr-registry --profile farmer-registry-seed --profile nsr-registry-seed --profile bridge --profile spar --profile full
+COMPOSE_PROFILES := --profile infra --profile with-redis --profile pbms --profile farmer-registry --profile nsr-registry --profile farmer-registry-seed --profile nsr-registry-seed --profile bridge --profile spar --profile full
 
 .DEFAULT_GOAL := help
 
 .PHONY: help setup clone generate install-odoo install-iam install-awe install-registry-extension install-registry-ui install-registry-db-seed \
 	infra-up infra-down up down status logs clean \
 	pbms-run farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
-	farmer-setup farmer-registry-init farmer-registry-migrate farmer-registry-seed \
+	farmer-setup farmer-registry-init farmer-registry-migrate farmer-registry-seed farmer-registry-fix-seed-enums farmer-registry-validate-seed \
 	nsr-setup nsr-registry-init nsr-registry-migrate nsr-registry-seed seed-registry iam-init awe-init \
 	extension-package extension-setup extension-run extension-init extension-migrate extension-seed clone-profiles \
 	up-infra up-pbms up-farmer-registry up-nsr-registry up-farmer-registry-seed up-nsr-registry-seed up-bridge up-spar up-full
@@ -76,6 +76,12 @@ farmer-registry-migrate: generate ## Migrate Farmer Registry schema only
 farmer-registry-seed: generate ## Seed Farmer Registry configuration and optional sample data
 	@VARIANT=farmer-registry bash scripts/seed-registry-db.sh farmer-registry
 
+farmer-registry-fix-seed-enums: ## Fix legacy farmer seed enum values in DB (source_of_income etc.)
+	@bash scripts/fix-farmer-registry-seeded-enums.sh
+
+farmer-registry-validate-seed: ## Validate farmer seed/DB data against extension schemas
+	@bash scripts/validate-farmer-registry-seed.sh
+
 farmer-setup: generate infra-up ## One-time Farmer Registry bootstrap: IAM, AWE, migrate, and seed (honours LOAD_SAMPLE_DATA in .env)
 	@bash scripts/farmer-setup.sh
 
@@ -120,12 +126,19 @@ extension-run: generate ## Run custom extension natively (NAME=disability-regist
 
 infra-up: ## Start shared infrastructure (Postgres, Redis, MinIO, Keycloak)
 	@test -f .env || cp .env.example .env
-	@bash -c 'set -a; source .env; set +a; $(COMPOSE) $(COMPOSE_FILES) --profile infra up -d'
+	@bash -c 'set -a; source .env; set +a; \
+		profiles=(--profile infra); \
+		if [[ "$${USE_EXTERNAL_REDIS:-false}" != "true" ]]; then profiles+=(--profile with-redis); fi; \
+		$(COMPOSE) $(COMPOSE_FILES) "$${profiles[@]}" up -d'
 	@bash -c 'set -a; source .env; set +a; $(COMPOSE) -f compose/docker-compose.infra.yml --profile infra up keycloak-init --abort-on-container-exit' || true
 	@bash -c 'set -a; source .env; set +a; \
 		echo "Infrastructure started."; \
 		echo "  Postgres: localhost:$${POSTGRES_PORT:-5432}"; \
-		echo "  Redis:    localhost:$${REDIS_PORT:-6379}"; \
+		if [[ "$${USE_EXTERNAL_REDIS:-false}" == "true" ]]; then \
+			echo "  Redis:    external ($${REDIS_HOST:-localhost}:$${REDIS_PORT:-6379})"; \
+		else \
+			echo "  Redis:    localhost:$${REDIS_PORT:-6379} (Docker)"; \
+		fi; \
 		echo "  MinIO:    http://localhost:9000 (console :9001)"; \
 		echo "  Keycloak: http://localhost:8080 (admin/admin by default)"; \
 		echo "  Staff realm + OIDC clients are provisioned automatically (see keycloak/README.md)"; \
